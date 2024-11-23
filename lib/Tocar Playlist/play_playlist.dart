@@ -25,6 +25,7 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
   List<Duration> durationList = [];
   List<UrlSource> songURL = [];
   int pass = 0;
+  Duration? musica = const Duration(seconds: 0);
 
   @override
   void initState() {
@@ -47,8 +48,6 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
         final video = (await yt.search.search(
                 "${songList.elementAt(index)} ${music.artistName ?? ""}"))
             .first;
-
-        print("${songList.elementAt(index)} ${music.artistName ?? ""}");
 
         final videoId = video.id.value;
         durationList.add(video.duration!);
@@ -112,10 +111,10 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                     child: StreamBuilder(
                         stream: player.onPositionChanged,
                         builder: (context, data) {
-                          print(data.data);
+                          musica = data.data;
                           // criar uma variavel pra substituir o data e deixar global
                           return ProgressBar(
-                            progress: data.data ?? const Duration(seconds: 0),
+                            progress: musica ?? const Duration(seconds: 0),
                             total: durationList[pass],
                             bufferedBarColor: Colors.white38,
                             baseBarColor: Colors.white10,
@@ -136,6 +135,7 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                         onPressed: () {
                           if (pass != 0) {
                             pass--;
+                            musica = const Duration(seconds: 0);
                             setState(() {});
                           }
                         },
@@ -170,6 +170,7 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                         onPressed: () {
                           if (pass != songList.length - 1) {
                             pass++;
+                            musica = const Duration(seconds: 0);
                             setState(() {});
                           }
                         },
