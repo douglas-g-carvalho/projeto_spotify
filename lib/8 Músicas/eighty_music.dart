@@ -25,6 +25,11 @@ class _EightyMusicState extends State<EightyMusic> {
 
   final Map<int, Map<String, String>> mapMusics = {};
 
+  ScrollController scrollController = ScrollController(
+    initialScrollOffset: 100,
+    keepScrollOffset: true,
+  );
+
   @override
   void initState() {
     for (int index = 0; index != listGroups.length; index++) {
@@ -74,48 +79,63 @@ class _EightyMusicState extends State<EightyMusic> {
   Widget build(BuildContext context) {
     final Size size = MediaQuery.sizeOf(context);
     final double width = size.width;
+    final double height = size.height;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // vai do mapMusics de 0 a 3;
-        if (mapMusics.length == listGroups.length)
-          SizedBox(
-            width: width / 2,
-            height: 270,
-            child: ListView.builder(
-              itemCount: 4,
-              itemBuilder: (_, int index) {
-                return MusicChoices(
-                  texto: mapMusics[index]!['name']!,
-                  icon: mapMusics[index]!['cover']!,
-                  spotify: mapMusics[index]!['spotify']!,
-                );
-              },
+    return SizedBox(
+      height: height*0.33,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // vai do mapMusics de 0 a 3;
+          if (mapMusics.length == listGroups.length)
+            SizedBox(
+              width: width * 0.475,
+              height: height * 0.40,
+              child: ListView.separated(
+                controller: scrollController,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: 4,
+                separatorBuilder: (_, int index) {
+                  return const SizedBox(height: 5);
+                },
+                itemBuilder: (_, int index) {
+                  return MusicChoices(
+                    texto: mapMusics[index]!['name']!,
+                    icon: mapMusics[index]!['cover']!,
+                    spotify: mapMusics[index]!['spotify']!,
+                  );
+                },
+              ),
             ),
-          ),
-        // vai do mapMusics de 4 a 7;
-        if (mapMusics.length == listGroups.length)
           SizedBox(
-            width: width / 2,
-            height: 270,
-            child: ListView.separated(
-              itemCount: 4,
-              separatorBuilder: (_, int index) {
-                return const SizedBox(height: 2);
-              },
-              itemBuilder: (_, int index) {
-                return MusicChoices(
-                  texto: mapMusics[index + 4]!['name']!,
-                  icon: mapMusics[index + 4]!['cover']!,
-                  spotify: mapMusics[index + 4]!['spotify']!,
-                );
-              },
-            ),
+            width: width * 0.05,
+            height: height*0.40,
           ),
-        if (mapMusics.length != listGroups.length)
-          const Center(child: CircularProgressIndicator(color: Colors.green)),
-      ],
+          // vai do mapMusics de 4 a 7;
+          if (mapMusics.length == listGroups.length)
+            SizedBox(
+              width: width * 0.475,
+              height: height * 0.40,
+              child: ListView.separated(
+                controller: scrollController,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: 4,
+                separatorBuilder: (_, int index) {
+                  return const SizedBox(height: 5);
+                },
+                itemBuilder: (_, int index) {
+                  return MusicChoices(
+                    texto: mapMusics[index + 4]!['name']!,
+                    icon: mapMusics[index + 4]!['cover']!,
+                    spotify: mapMusics[index + 4]!['spotify']!,
+                  );
+                },
+              ),
+            ),
+          if (mapMusics.length != listGroups.length)
+            const Center(child: CircularProgressIndicator(color: Colors.green)),
+        ],
+      ),
     );
   }
 }

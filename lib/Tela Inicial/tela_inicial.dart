@@ -16,7 +16,6 @@ class _TelaInicialState extends State<TelaInicial> {
 
   @override
   Widget build(BuildContext context) {
-    
     void change(List<bool> hud) {
       setState(() => hudChoice = hud);
     }
@@ -46,19 +45,22 @@ class _TelaInicialState extends State<TelaInicial> {
           }
         },
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            BasicChoices(hud: hudChoice, changeHud: change),
-            const SizedBox(height: 10),
-            if (hudChoice[0] || hudChoice[1])
-              const Column(
-                children: [
-                  EightyMusic(),
-                  MixesMaisOuvidos(),
-                ],
-              ),
-          ],
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              BasicChoices(hud: hudChoice, changeHud: change),
+              const SizedBox(height: 10),
+              if (hudChoice[0] || hudChoice[1])
+                const Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    EightyMusic(),
+                    MixesMaisOuvidos(),
+                  ],
+                ),
+            ],
+          ),
         ),
       ),
     );

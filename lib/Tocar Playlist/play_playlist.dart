@@ -25,6 +25,7 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
   List<Duration> durationList = [];
   List<UrlSource> songURL = [];
   int pass = 0;
+  int reiniciar = 0;
   Duration? musica = const Duration(seconds: 0);
 
   @override
@@ -112,6 +113,10 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                         stream: player.onPositionChanged,
                         builder: (context, data) {
                           musica = data.data;
+                          if (reiniciar != pass) {
+                            reiniciar = pass;
+                            musica = const Duration(seconds: 0);
+                          }
                           // criar uma variavel pra substituir o data e deixar global
                           return ProgressBar(
                             progress: musica ?? const Duration(seconds: 0),

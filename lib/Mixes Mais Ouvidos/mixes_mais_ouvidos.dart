@@ -71,7 +71,6 @@ class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const SizedBox(height: 20),
         Text(
           artistImage.length == listGroups.length
               ? 'Seus mixes mais ouvidos'

@@ -1,5 +1,7 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:spotify/spotify.dart' as spot;
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 import '../Geral/Constants/constants.dart';
 
@@ -12,11 +14,22 @@ class PlaylistStyle extends StatefulWidget {
 }
 
 class _PlaylistStyleState extends State<PlaylistStyle> {
+  final player = AudioPlayer();
+
   Set<String> songList = {};
   List<String> imageList = [];
+  List<Duration> durationList = [];
+  List<UrlSource> songURL = [];
+  List<String> description = [];
+
   String? artistName;
   String? artistImage;
-  List<String> description = [];
+
+  int? currentSong;
+
+  Duration? musica = const Duration(seconds: 0);
+
+  bool loading = false;
 
   @override
   void initState() {
@@ -35,37 +48,33 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
       });
 
       setState(() {});
+    }).then((value) async {
+      final yt = YoutubeExplode();
+      for (int index = 0; index != songList.length; index++) {
+        final video = (await yt.search
+                .search("${songList.elementAt(index)} ${artistName ?? ""}"))
+            .first;
+
+        final videoId = video.id.value;
+        durationList.add(video.duration!);
+
+        var manifest = await yt.videos.streamsClient.getManifest(videoId);
+        var audioUrl = manifest.audioOnly.last.url;
+
+        songURL.add(UrlSource(audioUrl.toString()));
+        setState(() {});
+      }
     });
 
-    // spotify.tracks.get(music.trackId).then((track) async {
-    //   String? tempSongName = track.name;
-    //   if (tempSongName != null) {
-    //     music.songName = tempSongName;
-    //     music.artistName = track.artists?.first.name ?? "";
-    //     String? image = track.album?.images?.first.url;
-    //     if (image != null) {
-    //       music.songImage = image;
-    //     }
-    //   }
-    //   music.artistImage = track.artists?.first.images?.first.url;
-    //   setState(() {});
-    //   final yt = YoutubeExplode();
-    //   final video =
-    //       (await yt.search.search("$tempSongName ${music.artistName ?? ""}"))
-    //           .first;
-
-    //   final videoId = video.id.value;
-    //   music.duration = video.duration;
-
-    //   var manifest = await yt.videos.streamsClient.getManifest(videoId);
-    //   var audioUrl = manifest.audioOnly.last.url;
-    //   player.play(UrlSource(audioUrl.toString()));
-    // });
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final width = size.width;
+    final height = size.height;
+
     return Scaffold(
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.white),
@@ -82,7 +91,7 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
         child: ListView.separated(
           itemCount: songList.length,
           separatorBuilder: (BuildContext context, int index) =>
-              const SizedBox(width: 5),
+              const SizedBox(width: 10),
           itemBuilder: (BuildContext context, int index) {
             return songList.isNotEmpty
                 ? Row(
@@ -97,14 +106,15 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                       ),
                       const SizedBox(width: 10),
                       SizedBox(
-                          width: 80,
-                          height: 80,
+                          width: width * 0.20,
+                          height: height * 0.10,
                           child: Image.network(imageList[index])),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 5),
                       Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           SizedBox(
-                            width: 280,
+                            width: width * 0.50,
                             child: Material(
                               color: Colors.transparent,
                               child: Text(
@@ -116,7 +126,7 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                             ),
                           ),
                           SizedBox(
-                            width: 280,
+                            width: width * 0.50,
                             child: Material(
                               color: Colors.transparent,
                               child: Text(
@@ -133,12 +143,43 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                         style: ElevatedButton.styleFrom(
                           shape: const CircleBorder(),
                         ),
-                        onPressed: () {},
-                        child: const Icon(
-                          Icons.play_circle,
-                          color: Colors.green,
-                          size: 40,
-                        ),
+                        onPressed: () async {
+                          if (songURL.elementAtOrNull(index) != null) {
+                            if (player.state == PlayerState.stopped ||
+                                player.state == PlayerState.paused) {
+                              currentSong = index;
+
+                              setState(() => loading = true);
+                              await player.play(songURL[index]);
+                              setState(() => loading = false);
+                            } else {
+                              await player.pause();
+                            }
+
+                            setState(() {});
+                          }
+                        },
+                        child: Stack(children: [
+                          if (loading == false || currentSong != index)
+                            Icon(
+                              (player.state == PlayerState.playing &&
+                                      currentSong == index)
+                                  ? Icons.pause_circle
+                                  : Icons.play_circle,
+                              color: songURL.elementAtOrNull(index) != null
+                                  ? Colors.green
+                                  : const Color.fromARGB(255, 75, 97, 75),
+                              size: 40,
+                            ),
+                          if (currentSong == index)
+                            Icon(
+                              Icons.lock,
+                              color: (loading == true && currentSong == index)
+                                  ? Colors.green
+                                  : Colors.transparent,
+                              size: 40,
+                            ),
+                        ]),
                       ),
                     ],
                   )
