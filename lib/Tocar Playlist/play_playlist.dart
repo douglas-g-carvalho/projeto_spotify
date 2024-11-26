@@ -117,7 +117,6 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                             reiniciar = pass;
                             musica = const Duration(seconds: 0);
                           }
-                          // criar uma variavel pra substituir o data e deixar global
                           return ProgressBar(
                             progress: musica ?? const Duration(seconds: 0),
                             total: durationList[pass],
