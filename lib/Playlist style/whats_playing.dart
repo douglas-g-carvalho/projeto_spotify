@@ -94,6 +94,7 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                         timeLabelTextStyle:
                             const TextStyle(color: Colors.white),
                         progressBarColor: Colors.green[900],
+                        //TODO pausar o audio qnd mexer na barra de tempo.
                         onSeek: (duration) {
                           widget.player.seek(duration);
                         },

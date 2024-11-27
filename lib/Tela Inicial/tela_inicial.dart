@@ -27,6 +27,7 @@ class _TelaInicialState extends State<TelaInicial> {
         unselectedIconTheme: const IconThemeData(color: Colors.white),
         selectedItemColor: Colors.green,
         unselectedItemColor: Colors.white,
+        currentIndex: 0,
         items: const [
           BottomNavigationBarItem(
               icon: Icon(Icons.home_outlined), label: 'Inicio'),
@@ -40,6 +41,7 @@ class _TelaInicialState extends State<TelaInicial> {
               Navigator.pushNamed(context, '/');
             case 1:
               Navigator.pushNamed(context, '/buscar');
+
             case 2:
               Navigator.pushNamed(context, '/biblioteca');
           }
