@@ -1,12 +1,11 @@
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:spotify/spotify.dart';
+import 'package:spotify/spotify.dart' as sptf;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
-import '../Geral/Constants/constants.dart';
-import '../Mixes Mais Ouvidos/Componentes/mixes.dart';
-import '../models/new_play_info.dart';
+import '../Utils/constants.dart';
+import '../Models/new_play_info.dart';
 
 class PlayPlaylist extends StatefulWidget {
   final String trackId;
@@ -34,10 +33,10 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
   void initState() {
     newPlayInfo.trackId = widget.trackId;
     final credentials =
-        SpotifyApiCredentials(Constants.clientId, Constants.clientSecret);
-    final spotify = SpotifyApi(credentials);
+        sptf.SpotifyApiCredentials(Constants.clientId, Constants.clientSecret);
+    final spotify = sptf.SpotifyApi(credentials);
 
-    spotify.playlists.get(newPlayInfo.trackId!).then((value) async {
+    spotify.playlists.get(newPlayInfo.trackId!).then((value) {
       newPlayInfo.artistName = value.name;
       newPlayInfo.artistImage = value.images?.first.url;
       newPlayInfo.totalSongs = value.tracks?.total;
@@ -51,6 +50,7 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
       final yt = YoutubeExplode();
       for (int index = 0; index != newPlayInfo.songList!.length; index++) {
         final video = (await yt.search.search(
+                filter: TypeFilters.video,
                 "${newPlayInfo.songList!.elementAt(index)} ${newPlayInfo.artistName ?? ""} music"))[
             indexVideos];
 
@@ -79,21 +79,28 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final width = size.width;
+    final height = size.height;
+
     return Scaffold(
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.white),
         title: Row(
           children: [
-            SizedBox(
-              width: 40,
-              height: 40,
-              child: Mixes().mixes(teste: newPlayInfo.artistImage),
-            ),
-            const SizedBox(width: 20),
+            if (newPlayInfo.songList!.isNotEmpty)
+              SizedBox(
+                width: width * 0.14,
+                height: height * 0.14,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: Image.network(newPlayInfo.artistImage!),
+                ),
+              ),
+            SizedBox(width: width * 0.02),
             Expanded(
               child: Text(
                 newPlayInfo.artistName ?? '',
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: Colors.white, fontSize: width * 0.065),
               ),
             ),
           ],
@@ -106,11 +113,12 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                 children: [
                   SizedBox(height: size.height * 0.15),
                   SizedBox(
-                    width: 275,
-                    height: 275,
-                    child: Mixes().mixes(
-                      teste: newPlayInfo.imageList!
-                          .elementAtOrNull(newPlayInfo.pass!),
+                    width: size.width * 1,
+                    height: size.height * 0.4,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: Image.network(newPlayInfo.imageList!
+                          .elementAtOrNull(newPlayInfo.pass!)!),
                     ),
                   ),
                   SizedBox(height: size.height * 0.05),
@@ -119,9 +127,9 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                         '',
                     textAlign: TextAlign.center,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 20,
+                      fontSize: width * 0.07,
                     ),
                   ),
                   SizedBox(
@@ -137,7 +145,8 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                         return ProgressBar(
                           progress:
                               newPlayInfo.musica ?? const Duration(seconds: 0),
-                          total: newPlayInfo.durationList![newPlayInfo.pass!],
+                          total: newPlayInfo.durationList?[newPlayInfo.pass!] ??
+                              const Duration(seconds: 0),
                           bufferedBarColor: Colors.grey,
                           baseBarColor: Colors.white,
                           thumbColor: Colors.green,
@@ -145,8 +154,8 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                           timeLabelTextStyle:
                               const TextStyle(color: Colors.white),
                           progressBarColor: Colors.green[900],
-                          //TODO pausar o audio qnd mexer na barra de tempo.
                           onSeek: (duration) {
+                            setState(() => player.pause());
                             player.seek(duration);
                           },
                         );
@@ -169,7 +178,7 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                           newPlayInfo.pass == 0
                               ? Icons.arrow_circle_left_outlined
                               : Icons.arrow_circle_left,
-                          size: 50,
+                          size: width * 0.14,
                           color: Colors.white,
                         ),
                       ),
@@ -227,7 +236,7 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                           newPlayInfo.pass == newPlayInfo.songList!.length - 1
                               ? Icons.arrow_circle_right_outlined
                               : Icons.arrow_circle_right,
-                          size: 50,
+                          size: width * 0.14,
                           color: Colors.white,
                         ),
                       ),

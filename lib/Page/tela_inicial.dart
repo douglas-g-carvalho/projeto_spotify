@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:projeto_spotify/Mixes%20Mais%20Ouvidos/mixes_mais_ouvidos.dart';
+import 'package:projeto_spotify/Widget/mixes_mais_ouvidos.dart';
 
-import '../Basic Choices/basic_choices.dart';
-import '../8 Músicas/eighty_music.dart';
+import '../Widget/basic_choices.dart';
+import '../Widget/eighty_music.dart';
 
 class TelaInicial extends StatefulWidget {
   const TelaInicial({super.key});

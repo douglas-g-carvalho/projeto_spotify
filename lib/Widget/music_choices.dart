@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:projeto_spotify/Tocar%20Playlist/play_playlist.dart';
+import 'package:projeto_spotify/Widget/play_playlist.dart';
 
 class MusicChoices extends StatelessWidget {
   final String texto;
@@ -15,12 +15,16 @@ class MusicChoices extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final width = size.width;
+    final height = size.height;
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
         Container(
-          height: 60,
-          width: 200,
+          width: width*0.5,
+          height: height*0.075,
           decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(2),
               shape: BoxShape.rectangle,
@@ -38,8 +42,8 @@ class MusicChoices extends StatelessWidget {
                       child: Text(
                         texto,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 17,
+                        style:  TextStyle(
+                          fontSize: height*0.02,
                           color: Colors.white,
                         ),
                       ),
@@ -50,6 +54,7 @@ class MusicChoices extends StatelessWidget {
               TextButton(
                 style: ElevatedButton.styleFrom(
                   shape: const RoundedRectangleBorder(),
+               
                 ),
                 onPressed: () {
                   Navigator.push(
@@ -57,9 +62,9 @@ class MusicChoices extends StatelessWidget {
                       MaterialPageRoute(
                           builder: (_) => PlayPlaylist(trackId: spotify)));
                 },
-                child: const SizedBox(
-                  width: 170,
-                  height: 60,
+                child:  SizedBox(
+                  width: width * 0.5,
+                  height: height*0.06,
                 ),
               ),
             ],

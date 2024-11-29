@@ -20,6 +20,9 @@ class NewPlayInfo {
   List<UrlSource>? songURL;
   List<String>? descriptionList;
 
+  Map<String, UrlSource>? newUrlMusic;
+  Map<String, Duration>? newDurationMusic;
+
   Duration? musica;
 
   bool? loading;
@@ -38,6 +41,8 @@ class NewPlayInfo {
     this.durationList,
     this.imageList,
     this.loading,
+    this.newUrlMusic,
+    this.newDurationMusic,
     this.musica,
     this.otherMusic,
     this.pass,

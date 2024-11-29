@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:spotify/spotify.dart';
 
-import '../Geral/Constants/constants.dart';
-import 'Componentes/music_choices.dart';
+import '../Utils/constants.dart';
+import 'music_choices.dart';
 
 class EightyMusic extends StatefulWidget {
   const EightyMusic({super.key});
@@ -32,46 +32,19 @@ class _EightyMusicState extends State<EightyMusic> {
 
   @override
   void initState() {
+    final credentials =
+        SpotifyApiCredentials(Constants.clientId, Constants.clientSecret);
+    final spotify = SpotifyApi(credentials);
     for (int index = 0; index != listGroups.length; index++) {
-      final credentials =
-          SpotifyApiCredentials(Constants.clientId, Constants.clientSecret);
-      final spotify = SpotifyApi(credentials);
-
       spotify.playlists.get(listGroups[index]).then((value) {
         mapMusics.addAll({
           index: {'name': value.name!}
         });
         mapMusics[index]!.addAll({'cover': value.images!.first.url!});
         mapMusics[index]!.addAll({'spotify': value.id!});
-
         setState(() {});
       });
     }
-
-    // spotify.tracks.get(music.trackId).then((track) async {
-    //   String? tempSongName = track.name;
-    //   if (tempSongName != null) {
-    //     music.songName = tempSongName;
-    //     music.artistName = track.artists?.first.name ?? "";
-    //     String? image = track.album?.images?.first.url;
-    //     if (image != null) {
-    //       music.songImage = image;
-    //     }
-    //   }
-    //   music.artistImage = track.artists?.first.images?.first.url;
-    //   setState(() {});
-    //   final yt = YoutubeExplode();
-    //   final video =
-    //       (await yt.search.search("$tempSongName ${music.artistName ?? ""}"))
-    //           .first;
-
-    //   final videoId = video.id.value;
-    //   music.duration = video.duration;
-
-    //   var manifest = await yt.videos.streamsClient.getManifest(videoId);
-    //   var audioUrl = manifest.audioOnly.last.url;
-    //   player.play(UrlSource(audioUrl.toString()));
-    // });
     super.initState();
   }
 
@@ -82,7 +55,7 @@ class _EightyMusicState extends State<EightyMusic> {
     final double height = size.height;
 
     return SizedBox(
-      height: height*0.33,
+      height: height * 0.33,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -109,7 +82,7 @@ class _EightyMusicState extends State<EightyMusic> {
             ),
           SizedBox(
             width: width * 0.05,
-            height: height*0.40,
+            height: height * 0.40,
           ),
           // vai do mapMusics de 4 a 7;
           if (mapMusics.length == listGroups.length)

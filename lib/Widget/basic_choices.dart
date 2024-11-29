@@ -8,15 +8,18 @@ class BasicChoices extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final width = size.width;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(
+         Icon(
           Icons.account_circle_outlined,
           color: Colors.white,
-          size: 50,
+          size: width*0.15,
         ),
-        const SizedBox(width: 5),
+         SizedBox(width: width*0.01),
         TextButton(
           style: ElevatedButton.styleFrom(
               shape: const StadiumBorder(),
@@ -33,7 +36,7 @@ class BasicChoices extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 5),
+          SizedBox(width: width*0.01),
         TextButton(
           style: ElevatedButton.styleFrom(
               shape: const StadiumBorder(),
@@ -50,7 +53,7 @@ class BasicChoices extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 5),
+          SizedBox(width: width*0.01),
         TextButton(
           style: ElevatedButton.styleFrom(
               shape: const StadiumBorder(),

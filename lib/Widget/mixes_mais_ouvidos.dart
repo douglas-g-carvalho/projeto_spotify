@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:projeto_spotify/Playlist%20style/playlist_style.dart';
+import 'package:projeto_spotify/Widget/playlist_style.dart';
 
-import '../Geral/Constants/constants.dart';
-import 'Componentes/mixes.dart';
-import 'package:spotify/spotify.dart';
+import '../Utils/constants.dart';
+import 'package:spotify/spotify.dart' as sptf;
 
 class MixesMaisOuvidos extends StatefulWidget {
   const MixesMaisOuvidos({super.key});
@@ -14,74 +13,50 @@ class MixesMaisOuvidos extends StatefulWidget {
 
 class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
   final List<String> listGroups = [
-    '37i9dQZF1E4yDLLdhzbPqY',
-    '37i9dQZF1E4wKXrAP0YkOe',
-    '37i9dQZF1E4kS7EClyxsob',
-    '37i9dQZF1E4ttzrPMX55m8',
+ '6G4O7YRLjTk4T4VPa4fDAM',
+ '7w13RcdObCa0WvQrjVJDfp',
+ '5z2dTZUjDD90wM4Z9youwS',
   ];
 
   List<String> artistImage = [];
-  List<String> description = [];
+  List<String> playlistName = [];
   List<String> listID = [];
 
   @override
   void initState() {
+    final credentials =
+        sptf.SpotifyApiCredentials(Constants.clientId, Constants.clientSecret);
+    final spotify = sptf.SpotifyApi(credentials);
     for (int index = 0; index != listGroups.length; index++) {
-      final credentials =
-          SpotifyApiCredentials(Constants.clientId, Constants.clientSecret);
-      final spotify = SpotifyApi(credentials);
-
       spotify.playlists.get(listGroups[index]).then((value) {
         artistImage.add(value.images!.first.url!);
-        description.add(value.description!);
+        playlistName.add(value.name!);
         listID.add(value.id!);
-
         setState(() {});
       });
     }
-
-    // spotify.tracks.get(music.trackId).then((track) async {
-    //   String? tempSongName = track.name;
-    //   if (tempSongName != null) {
-    //     music.songName = tempSongName;
-    //     music.artistName = track.artists?.first.name ?? "";
-    //     String? image = track.album?.images?.first.url;
-    //     if (image != null) {
-    //       music.songImage = image;
-    //     }
-    //   }
-    //   music.artistImage = track.artists?.first.images?.first.url;
-    //   setState(() {});
-    //   final yt = YoutubeExplode();
-    //   final video =
-    //       (await yt.search.search("$tempSongName ${music.artistName ?? ""}"))
-    //           .first;
-
-    //   final videoId = video.id.value;
-    //   music.duration = video.duration;
-
-    //   var manifest = await yt.videos.streamsClient.getManifest(videoId);
-    //   var audioUrl = manifest.audioOnly.last.url;
-    //   player.play(UrlSource(audioUrl.toString()));
-    // });
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final width = size.width;
+    final height = size.height;
+
     return Column(
       children: [
         Text(
           artistImage.length == listGroups.length
-              ? 'Seus mixes mais ouvidos'
+              ? 'Alguns álbuns para você'
               : '',
-          style: const TextStyle(color: Colors.white, fontSize: 20),
+          style: TextStyle(color: Colors.white, fontSize: height * 0.03),
         ),
         const SizedBox(height: 5),
         Container(
           padding: const EdgeInsetsDirectional.symmetric(horizontal: 10),
           width: double.infinity,
-          height: 220,
+          height: height * 0.30,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             shrinkWrap: true,
@@ -96,24 +71,25 @@ class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
                         clipBehavior: Clip.none,
                         children: [
                           SizedBox(
-                            width: 170,
-                            height: 170,
-                            child: Mixes().mixes(
-                              teste: artistImage[index],
-                              extra: true,
+                            width: width * 0.45,
+                            height: height * 0.22,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(2),
+                              child: Image.network(artistImage[index]),
                             ),
                           ),
                           Positioned(
-                            top: 170,
-                            left: 10,
+                            top: width * 0.45,
+                            left: height * 0.01,
                             child: SizedBox(
-                              width: 150,
+                              width: width * 0.4,
                               child: Text(
+                                overflow: TextOverflow.clip,
                                 textAlign: TextAlign.center,
-                                description[index],
-                                style: const TextStyle(
+                                playlistName[index],
+                                style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 12,
+                                  fontSize: height * 0.025,
                                 ),
                               ),
                             ),
@@ -131,9 +107,9 @@ class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
                                 borderRadius: BorderRadius.zero,
                               ),
                             ),
-                            child: const SizedBox(
-                              height: 170,
-                              width: 146,
+                            child: SizedBox(
+                              width: width * 0.38,
+                              height: height * 0.20,
                             ),
                           ),
                         ],

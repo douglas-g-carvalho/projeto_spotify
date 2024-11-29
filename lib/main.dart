@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:projeto_spotify/Geral/App%20Routes/app_routes.dart';
-import 'package:projeto_spotify/Tocar%20M%C3%BAsica/play_music.dart';
-import 'package:projeto_spotify/search/search.dart';
+import 'package:projeto_spotify/Utils/app_routes.dart';
+import 'package:projeto_spotify/Page/search.dart';
 
-import 'Tela Inicial/tela_inicial.dart';
+import 'Page/tela_inicial.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +25,6 @@ class MyApp extends StatelessWidget {
       ),
       routes: {
         AppRoutes.inicio: (ctx) => const TelaInicial(),
-        AppRoutes.playMusic: (ctx) => const PlayMusic(),
         AppRoutes.buscar: (ctx) => const Search(),
       },
     );

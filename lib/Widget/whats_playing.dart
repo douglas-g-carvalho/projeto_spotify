@@ -7,7 +7,7 @@ class WhatsPlaying extends StatefulWidget {
   final String nameMusic;
   final String imageMusic;
   final String descriptionMusic;
-  final Function playBottom;
+  final Function(String, String, [bool]) playBottom;
   final AudioPlayer player;
   final bool otherMusic;
   final Duration duration;
@@ -94,8 +94,8 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                         timeLabelTextStyle:
                             const TextStyle(color: Colors.white),
                         progressBarColor: Colors.green[900],
-                        //TODO pausar o audio qnd mexer na barra de tempo.
                         onSeek: (duration) {
+                          setState(() => widget.player.pause());
                           widget.player.seek(duration);
                         },
                       );
@@ -107,7 +107,8 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
           ),
           TextButton(
             onPressed: () async {
-              await widget.playBottom();
+              await widget.playBottom(
+                  widget.nameMusic, widget.descriptionMusic);
               setState(() {});
             },
             child: Stack(
