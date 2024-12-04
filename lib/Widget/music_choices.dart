@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:projeto_spotify/Widget/play_playlist.dart';
+import 'package:projeto_spotify/Widget/play_music.dart';
 
 class MusicChoices extends StatelessWidget {
   final String texto;

@@ -1,3 +1,5 @@
+import 'package:audioplayers/audioplayers.dart';
+
 class SearchModel {
   List<String>? id;
   List<String>? title;
@@ -5,7 +7,8 @@ class SearchModel {
   List<String>? viewCount;
   List<DateTime>? uploadDate;
   List<String>? uploadDateRaw;
-  List<Duration>? duration;
+  List<String>? duration;
+  List<UrlSource>? urlSound;
 
   SearchModel({
     this.id,
@@ -15,5 +18,6 @@ class SearchModel {
     this.uploadDate,
     this.uploadDateRaw,
     this.duration,
+    this.urlSound,
   });
 }

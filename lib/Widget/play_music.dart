@@ -21,13 +21,61 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
   NewPlayInfo newPlayInfo = NewPlayInfo(
     songList: {},
     imageList: [],
-    durationList: [],
-    songURL: [],
+    newUrlMusic: {},
+    newDurationMusic: {},
     pass: 0,
     reiniciar: 0,
     musica: const Duration(seconds: 0),
     loading: false,
   );
+
+  Future<void> play(
+    String musicName,
+    String artistName,
+  ) async {
+    setState(() => newPlayInfo.loading = true);
+    await getUrlMusic(musicName, artistName);
+
+    if (player.state == PlayerState.stopped ||
+        player.state == PlayerState.paused) {
+      setState(() => newPlayInfo.loading = true);
+
+      await player.play(newPlayInfo.newUrlMusic![musicName]!);
+
+      setState(() => newPlayInfo.loading = false);
+    } else {
+      await player.pause();
+      setState(() => newPlayInfo.loading = false);
+    }
+    setState(() {});
+  }
+
+  Future<void> getUrlMusic(String musicName, String artistName) async {
+    if (!newPlayInfo.newUrlMusic!.containsKey(musicName)) {
+      int indexVideos = 0;
+      final yt = YoutubeExplode();
+      for (int index = 0; index < 20; index++) {
+        final video = (await yt.search.search(
+            filter: TypeFilters.video, "$musicName $artistName"))[indexVideos];
+
+        if (video.duration! > const Duration(minutes: 20)) {
+          indexVideos++;
+          continue;
+        }
+
+        final videoId = video.id.value;
+        newPlayInfo.newDurationMusic!.addAll({musicName: video.duration!});
+
+        var manifest = await yt.videos.streamsClient.getManifest(videoId);
+        var audioUrl = manifest.audioOnly.last.url;
+
+        newPlayInfo.newUrlMusic!
+            .addAll({musicName: UrlSource(audioUrl.toString())});
+        setState(() {});
+        break;
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -44,33 +92,8 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
       value.tracks?.itemsNative?.forEach((value) {
         newPlayInfo.songList!.add(value['track']['name']);
         newPlayInfo.imageList!.add(value['track']['album']['images'][0]['url']);
-      });
-    }).then((value) async {
-      int indexVideos = 0;
-      final yt = YoutubeExplode();
-      for (int index = 0; index != newPlayInfo.songList!.length; index++) {
-        final video = (await yt.search.search(
-                filter: TypeFilters.video,
-                "${newPlayInfo.songList!.elementAt(index)} ${newPlayInfo.artistName ?? ""} music"))[
-            indexVideos];
-
-        if (video.duration! > const Duration(minutes: 20)) {
-          indexVideos++;
-          index--;
-          continue;
-        } else {
-          indexVideos = 0;
-        }
-
-        final videoId = video.id.value;
-        newPlayInfo.durationList!.add(video.duration!);
-
-        var manifest = await yt.videos.streamsClient.getManifest(videoId);
-        var audioUrl = manifest.audioOnly.last.url;
-
-        newPlayInfo.songURL!.add(UrlSource(audioUrl.toString()));
         setState(() {});
-      }
+      });
     });
 
     super.initState();
@@ -142,10 +165,13 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                           newPlayInfo.reiniciar = newPlayInfo.pass;
                           newPlayInfo.musica = const Duration(seconds: 0);
                         }
+
                         return ProgressBar(
                           progress:
                               newPlayInfo.musica ?? const Duration(seconds: 0),
-                          total: newPlayInfo.durationList?[newPlayInfo.pass!] ??
+                          total: newPlayInfo.newDurationMusic?[newPlayInfo
+                                  .songList!
+                                  .elementAt(newPlayInfo.pass!)] ??
                               const Duration(seconds: 0),
                           bufferedBarColor: Colors.grey,
                           baseBarColor: Colors.white,
@@ -155,7 +181,6 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                               const TextStyle(color: Colors.white),
                           progressBarColor: Colors.green[900],
                           onSeek: (duration) {
-                            setState(() => player.pause());
                             player.seek(duration);
                           },
                         );
@@ -186,17 +211,10 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                         children: [
                           TextButton(
                             onPressed: () async {
-                              if (player.state == PlayerState.stopped ||
-                                  player.state == PlayerState.paused) {
-                                setState(() => newPlayInfo.loading = true);
-                                await player.play(
-                                    newPlayInfo.songURL![newPlayInfo.pass!]);
-                                setState(() => newPlayInfo.loading = false);
-                              } else {
-                                await player.pause();
-                              }
-
-                              setState(() {});
+                              await play(
+                                  newPlayInfo.songList!
+                                      .elementAt(newPlayInfo.pass!),
+                                  newPlayInfo.artistName!);
                             },
                             child: Icon(
                               player.state == PlayerState.playing

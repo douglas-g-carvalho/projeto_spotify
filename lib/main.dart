@@ -19,7 +19,9 @@ class MyApp extends StatelessWidget {
       title: 'Spotify (Beta)',
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.black,
-        appBarTheme: const AppBarTheme(backgroundColor: Colors.black),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.black,
+        ),
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
