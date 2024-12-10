@@ -89,7 +89,7 @@ class _SearchState extends State<Search> {
         ? minute < 10
             ? '0${minute.round()}:'
             : '${minute.round()}:'
-        : '0:';
+        : '00:';
 
     String hourString = hour != 0 ? '${hour.round()}:' : '';
 
@@ -102,6 +102,8 @@ class _SearchState extends State<Search> {
       'year': 'ano',
       'months': 'meses',
       'month': 'mes',
+      'week': 'semana',
+      'weeks': 'semanas',
       'days': 'dias',
       'day': 'dia',
       'hours': 'horas',
@@ -153,8 +155,6 @@ class _SearchState extends State<Search> {
           BottomNavigationBarItem(
               icon: Icon(Icons.home_outlined), label: 'Inicio'),
           BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Buscar'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.menu_book), label: 'Biblioteca'),
         ],
         onTap: (value) {
           switch (value) {
@@ -162,8 +162,6 @@ class _SearchState extends State<Search> {
               Navigator.pushNamed(context, '/');
             case 1:
               Navigator.pushNamed(context, '/buscar');
-            case 2:
-              Navigator.pushNamed(context, '/biblioteca');
           }
         },
       ),
@@ -176,100 +174,106 @@ class _SearchState extends State<Search> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.search,
-                        color: Colors.white, size: height * 0.04),
+                        color: Colors.white, size: height * 0.05),
                     SizedBox(
                       width: width * 0.80,
                       child: TextField(
                         style: TextStyle(
-                            color: Colors.white, fontSize: height * 0.024),
+                          color: Colors.white,
+                          fontSize: height * 0.024,
+                        ),
                         cursorColor: Colors.white,
                         keyboardType: TextInputType.text,
                         controller: controller,
                         onSubmitted: (String value) async {
-                          if (searchModel.id!.isNotEmpty) {
-                            searchModel.id = [];
-                            searchModel.title = [];
-                            searchModel.author = [];
-                            searchModel.viewCount = [];
-                            searchModel.uploadDate = [];
-                            searchModel.uploadDateRaw = [];
-                            searchModel.duration = [];
-                            searchModel.urlSound = [];
-                          }
-                          setState(() => loading = true);
-                          final yt = YoutubeExplode();
+                          if (value != '') {
+                            if (searchModel.id!.isNotEmpty) {
+                              searchModel.id = [];
+                              searchModel.title = [];
+                              searchModel.author = [];
+                              searchModel.viewCount = [];
+                              searchModel.uploadDate = [];
+                              searchModel.uploadDateRaw = [];
+                              searchModel.duration = [];
+                              searchModel.urlSound = [];
+                            }
+                            setState(() => loading = true);
+                            final yt = YoutubeExplode();
 
-                          final video = (await yt.search
-                              .search(value, filter: TypeFilters.video));
+                            final video = (await yt.search
+                                .search(value, filter: TypeFilters.video));
 
-                          for (int index = 0; index < video.length; index++) {
-                            int maybeError = 0;
-                            try {
-                              maybeError += 1;
-                              searchModel.id!.add(video[index].id.value);
-                              maybeError += 1;
-                              searchModel.title!.add(video[index].title);
-                              maybeError += 1;
-                              searchModel.author!.add(video[index].author);
+                            for (int index = 0; index < video.length; index++) {
+                              int maybeError = 0;
+                              try {
+                                maybeError += 1;
+                                searchModel.id!.add(video[index].id.value);
+                                maybeError += 1;
+                                searchModel.title!.add(video[index].title);
+                                maybeError += 1;
+                                searchModel.author!.add(video[index].author);
 
-                              maybeError += 1;
-                              searchModel.viewCount!.add(customizedViewCount(
-                                  video[index].engagement.viewCount));
+                                maybeError += 1;
+                                searchModel.viewCount!.add(customizedViewCount(
+                                    video[index].engagement.viewCount));
 
-                              maybeError += 1;
-                              searchModel.uploadDate!
-                                  .add(video[index].uploadDate!);
+                                maybeError += 1;
+                                searchModel.uploadDate!
+                                    .add(video[index].uploadDate!);
 
-                              maybeError += 1;
-                              searchModel.uploadDateRaw!.add(customizedDataAgo(
-                                  video[index].uploadDateRaw!));
+                                maybeError += 1;
+                                searchModel.uploadDateRaw!.add(
+                                    customizedDataAgo(
+                                        video[index].uploadDateRaw!));
 
-                              maybeError += 1;
-                              searchModel.duration!.add(
-                                  customizedDuration(video[index].duration!));
+                                maybeError += 1;
+                                searchModel.duration!.add(
+                                    customizedDuration(video[index].duration!));
 
-                              maybeError += 1;
-                              var manifest = await yt.videos.streamsClient
-                                  .getManifest(video[index].id.value);
-                              var audioUrl = manifest.audioOnly.last.url;
+                                maybeError += 1;
+                                var manifest = await yt.videos.streamsClient
+                                    .getManifest(video[index].id.value);
+                                var audioUrl = manifest.audioOnly.last.url;
 
-                              searchModel.urlSound!
-                                  .add(UrlSource(audioUrl.toString()));
-                            } catch (error) {
-                              for (int errors = 0;
-                                  errors != maybeError - 1;
-                                  errors++) {
-                                switch (errors) {
-                                  case 0:
-                                    searchModel.id!
-                                        .remove(video[index].id.value);
-                                  case 1:
-                                    searchModel.title!
-                                        .remove(video[index].title);
-                                  case 2:
-                                    searchModel.author!
-                                        .remove(video[index].author);
-                                  case 3:
-                                    searchModel.viewCount!.remove(
-                                        customizedViewCount(
-                                            video[index].engagement.viewCount));
-                                  case 4:
-                                    searchModel.uploadDate!
-                                        .remove(video[index].uploadDate);
-                                  case 5:
-                                    searchModel.uploadDateRaw!.remove(
-                                        customizedDataAgo(
-                                            video[index].uploadDateRaw!));
-                                  case 6:
-                                    searchModel.duration!.remove(
-                                        customizedDuration(
-                                            video[index].duration!));
+                                searchModel.urlSound!
+                                    .add(UrlSource(audioUrl.toString()));
+                              } catch (error) {
+                                for (int errors = 0;
+                                    errors != maybeError - 1;
+                                    errors++) {
+                                  switch (errors) {
+                                    case 0:
+                                      searchModel.id!
+                                          .remove(video[index].id.value);
+                                    case 1:
+                                      searchModel.title!
+                                          .remove(video[index].title);
+                                    case 2:
+                                      searchModel.author!
+                                          .remove(video[index].author);
+                                    case 3:
+                                      searchModel.viewCount!.remove(
+                                          customizedViewCount(video[index]
+                                              .engagement
+                                              .viewCount));
+                                    case 4:
+                                      searchModel.uploadDate!
+                                          .remove(video[index].uploadDate);
+                                    case 5:
+                                      searchModel.uploadDateRaw!.remove(
+                                          customizedDataAgo(
+                                              video[index].uploadDateRaw!));
+                                    case 6:
+                                      searchModel.duration!.remove(
+                                          customizedDuration(
+                                              video[index].duration!));
+                                  }
                                 }
                               }
-                            }
-                            if (searchModel.id!.isNotEmpty) {
-                              setState(() => loading = false);
-                              setState(() {});
+                              if (searchModel.id!.isNotEmpty) {
+                                setState(() => loading = false);
+                                setState(() {});
+                              }
                             }
                           }
                         },

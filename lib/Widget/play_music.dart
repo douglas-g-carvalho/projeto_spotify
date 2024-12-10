@@ -180,8 +180,10 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                           timeLabelTextStyle:
                               const TextStyle(color: Colors.white),
                           progressBarColor: Colors.green[900],
-                          onSeek: (duration) {
-                            player.seek(duration);
+                          onSeek: (duration) async {
+                            await player.seek(duration);
+                            await player.resume();
+                            setState(() {});
                           },
                         );
                       },

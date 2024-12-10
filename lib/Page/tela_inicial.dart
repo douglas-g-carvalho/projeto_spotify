@@ -32,8 +32,6 @@ class _TelaInicialState extends State<TelaInicial> {
           BottomNavigationBarItem(
               icon: Icon(Icons.home_outlined), label: 'Inicio'),
           BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Buscar'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.menu_book), label: 'Biblioteca'),
         ],
         onTap: (value) {
           switch (value) {
@@ -41,9 +39,6 @@ class _TelaInicialState extends State<TelaInicial> {
               Navigator.pushNamed(context, '/');
             case 1:
               Navigator.pushNamed(context, '/buscar');
-
-            case 2:
-              Navigator.pushNamed(context, '/biblioteca');
           }
         },
       ),

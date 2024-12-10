@@ -13,9 +13,9 @@ class MixesMaisOuvidos extends StatefulWidget {
 
 class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
   final List<String> listGroups = [
- '6G4O7YRLjTk4T4VPa4fDAM',
- '7w13RcdObCa0WvQrjVJDfp',
- '5z2dTZUjDD90wM4Z9youwS',
+    '6G4O7YRLjTk4T4VPa4fDAM',
+    '7w13RcdObCa0WvQrjVJDfp',
+    '5z2dTZUjDD90wM4Z9youwS',
   ];
 
   List<String> artistImage = [];

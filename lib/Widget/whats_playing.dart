@@ -94,9 +94,10 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                         timeLabelTextStyle:
                             const TextStyle(color: Colors.white),
                         progressBarColor: Colors.green[900],
-                        onSeek: (duration) {
-                          setState(() => widget.player.pause());
-                          widget.player.seek(duration);
+                        onSeek: (duration) async {
+                          await widget.player.seek(duration);
+                          await widget.player.resume();
+                          setState(() {});
                         },
                       );
                     },

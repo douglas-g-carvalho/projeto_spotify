@@ -1,6 +1,7 @@
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:text_scroll/text_scroll.dart';
 
 class SearchPlay extends StatefulWidget {
   final String title;
@@ -27,7 +28,8 @@ class SearchPlay extends StatefulWidget {
 }
 
 class _SearchPlayState extends State<SearchPlay> {
-  final player = AudioPlayer();
+  AudioPlayer player = AudioPlayer();
+  bool loading = false;
 
   Duration stringToDuration(String durationString) {
     switch (durationString.length) {
@@ -55,6 +57,20 @@ class _SearchPlayState extends State<SearchPlay> {
     }
   }
 
+  Future<void> play() async {
+    if (player.state == PlayerState.stopped ||
+        player.state == PlayerState.paused) {
+      setState(() => loading = true);
+
+      await player.play(widget.urlSound);
+
+      setState(() => loading = false);
+    } else {
+      await player.pause();
+    }
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -79,10 +95,14 @@ class _SearchPlayState extends State<SearchPlay> {
               size: width * 0.95,
               color: Colors.white,
             ),
-            Text(
-              textAlign: TextAlign.center,
+            TextScroll(
               widget.title,
-              style: TextStyle(color: Colors.white, fontSize: width * 0.05),
+              velocity: const Velocity(pixelsPerSecond: Offset(45, 0)),
+              intervalSpaces: 10,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: width * 0.05,
+              ),
             ),
             SizedBox(height: height * 0.01),
             Text(
@@ -112,25 +132,55 @@ class _SearchPlayState extends State<SearchPlay> {
                 ),
               ],
             ),
+            SizedBox(height: height * 0.01),
             SizedBox(
               width: width * 0.80,
               child: StreamBuilder(
                 stream: player.onPositionChanged,
                 builder: (context, data) {
                   return ProgressBar(
-                    progress: const Duration(seconds: 0),
+                    progress: data.data ?? const Duration(seconds: 0),
                     total: stringToDuration(widget.duration),
                     bufferedBarColor: Colors.grey,
                     baseBarColor: Colors.white,
-                    thumbColor: Colors.green,
+                    thumbColor: Colors.green[700],
                     thumbRadius: 7,
                     timeLabelTextStyle: const TextStyle(color: Colors.white),
-                    progressBarColor: Colors.green[900],
-                    onSeek: (duration) {
-                      player.seek(duration);
+                    progressBarColor: Colors.green[700],
+                    onSeek: (duration) async {
+                      await player.seek(duration);
+                      await player.resume();
+                      setState(() {});
                     },
                   );
                 },
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                await play();
+              },
+              child: Stack(
+                children: [
+                  Icon(
+                    player.state == PlayerState.playing
+                        ? Icons.pause_circle_outline
+                        : Icons.play_circle_outline,
+                    size: width * 0.38,
+                    color: loading ? Colors.transparent : Colors.green,
+                  ),
+                  Positioned(
+                    top: width * 0.04,
+                    right: width * 0.04,
+                    child: SizedBox(
+                      width: width * 0.3,
+                      height: height * 0.15,
+                      child: const CircularProgressIndicator(
+                        color: Colors.green,
+                      ),
+                    ),
+                  )
+                ],
               ),
             ),
           ],

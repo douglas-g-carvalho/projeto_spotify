@@ -37,12 +37,17 @@ class _EightyMusicState extends State<EightyMusic> {
     final spotify = SpotifyApi(credentials);
     for (int index = 0; index != listGroups.length; index++) {
       spotify.playlists.get(listGroups[index]).then((value) {
-        mapMusics.addAll({
-          index: {'name': value.name!}
-        });
-        mapMusics[index]!.addAll({'cover': value.images!.first.url!});
-        mapMusics[index]!.addAll({'spotify': value.id!});
-        setState(() {});
+        try {
+          mapMusics.addAll({
+            index: {'name': value.name!}
+          });
+          mapMusics[index]!.addAll({'cover': value.images!.first.url!});
+          mapMusics[index]!.addAll({'spotify': value.id!});
+          setState(() {});
+        } catch (error) {
+          mapMusics.remove(index);
+          index -= 1;
+        }
       });
     }
     super.initState();
