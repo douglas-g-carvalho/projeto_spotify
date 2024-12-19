@@ -1,13 +1,12 @@
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
-
-import 'package:audioplayers/audioplayers.dart';
+import 'package:just_audio/just_audio.dart';
 
 class WhatsPlaying extends StatefulWidget {
   final String nameMusic;
   final String imageMusic;
   final String descriptionMusic;
-  final Function(String, String, [bool]) playBottom;
+  final Function([bool]) playBottom;
   final AudioPlayer player;
   final bool otherMusic;
   final Duration duration;
@@ -81,14 +80,15 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                 SizedBox(
                   width: size.width * 0.482,
                   child: StreamBuilder(
-                    stream: widget.player.onPositionChanged,
+                    stream: widget.player.positionStream,
                     builder: (context, data) {
                       timeStamp = data.data;
                       return ProgressBar(
                         progress: timeStamp ?? const Duration(seconds: 0),
                         total: widget.duration,
+                        buffered: widget.player.bufferedPosition,
                         bufferedBarColor: Colors.grey,
-                        baseBarColor: const Color.fromARGB(221, 197, 197, 197),
+                        baseBarColor: Colors.white,
                         thumbColor: Colors.green,
                         thumbRadius: 7,
                         timeLabelTextStyle:
@@ -96,8 +96,6 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                         progressBarColor: Colors.green[900],
                         onSeek: (duration) async {
                           await widget.player.seek(duration);
-                          await widget.player.resume();
-                          setState(() {});
                         },
                       );
                     },
@@ -108,8 +106,7 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
           ),
           TextButton(
             onPressed: () async {
-              await widget.playBottom(
-                  widget.nameMusic, widget.descriptionMusic);
+              await widget.playBottom();
               setState(() {});
             },
             child: Stack(
@@ -121,7 +118,7 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                         child: const CircularProgressIndicator(
                             color: Colors.green))
                     : Icon(
-                        (widget.player.state == PlayerState.playing)
+                        (widget.player.playing)
                             ? Icons.pause
                             : Icons.play_arrow,
                         color: Colors.green,

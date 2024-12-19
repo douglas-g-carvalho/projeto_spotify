@@ -1,5 +1,3 @@
-import 'package:audioplayers/audioplayers.dart';
-
 class NewPlayInfo {
   String? trackId;
   String? artistName;
@@ -9,18 +7,12 @@ class NewPlayInfo {
   String? description;
 
   int? totalSongs;
-  int? pass;
-  int? reiniciar;
   int? currentSong;
 
   Set<String>? songList;
 
   List<String>? imageList;
-  List<Duration>? durationList;
-  List<UrlSource>? songURL;
-  List<String>? descriptionList;
 
-  Map<String, UrlSource>? newUrlMusic;
   Map<String, Duration>? newDurationMusic;
 
   Duration? musica;
@@ -37,17 +29,11 @@ class NewPlayInfo {
     this.description,
     this.totalSongs,
     this.currentSong,
-    this.descriptionList,
-    this.durationList,
     this.imageList,
     this.loading,
-    this.newUrlMusic,
     this.newDurationMusic,
     this.musica,
     this.otherMusic,
-    this.pass,
-    this.reiniciar,
     this.songList,
-    this.songURL,
   });
 }

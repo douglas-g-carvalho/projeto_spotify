@@ -1,62 +1,53 @@
-import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:spotify/spotify.dart' as sptf;
-import 'package:audioplayers/audioplayers.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 
 import '../Utils/constants.dart';
 import '../Models/new_play_info.dart';
 
-class PlayPlaylist extends StatefulWidget {
+class PlayMusic extends StatefulWidget {
   final String trackId;
-  const PlayPlaylist({super.key, required this.trackId});
+  const PlayMusic({super.key, required this.trackId});
 
   @override
-  State<PlayPlaylist> createState() => _PlayPlaylistState();
+  State<PlayMusic> createState() => _PlayMusicState();
 }
 
-class _PlayPlaylistState extends State<PlayPlaylist> {
+class _PlayMusicState extends State<PlayMusic> {
   final player = AudioPlayer();
+  late ConcatenatingAudioSource playlist;
+  List<AudioSource> songURL = [];
+  bool allLoad = false;
 
   NewPlayInfo newPlayInfo = NewPlayInfo(
     songList: {},
     imageList: [],
-    newUrlMusic: {},
     newDurationMusic: {},
-    pass: 0,
-    reiniciar: 0,
     musica: const Duration(seconds: 0),
     loading: false,
   );
 
-  Future<void> play(
-    String musicName,
-    String artistName,
-  ) async {
+  Future<void> play() async {
     setState(() => newPlayInfo.loading = true);
-    await getUrlMusic(musicName, artistName);
-
-    if (player.state == PlayerState.stopped ||
-        player.state == PlayerState.paused) {
-      setState(() => newPlayInfo.loading = true);
-
-      await player.play(newPlayInfo.newUrlMusic![musicName]!);
-
+    if (!player.playing) {
       setState(() => newPlayInfo.loading = false);
+      await player.play();
     } else {
       await player.pause();
       setState(() => newPlayInfo.loading = false);
     }
-    setState(() {});
   }
 
-  Future<void> getUrlMusic(String musicName, String artistName) async {
-    if (!newPlayInfo.newUrlMusic!.containsKey(musicName)) {
+  Future<void> getUrlMusic() async {
+    for (String musicName in newPlayInfo.songList!) {
       int indexVideos = 0;
       final yt = YoutubeExplode();
       for (int index = 0; index < 20; index++) {
         final video = (await yt.search.search(
-            filter: TypeFilters.video, "$musicName $artistName"))[indexVideos];
+            filter: TypeFilters.video,
+            "$musicName ${newPlayInfo.artistName}"))[indexVideos];
 
         if (video.duration! > const Duration(minutes: 20)) {
           indexVideos++;
@@ -69,12 +60,29 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
         var manifest = await yt.videos.streamsClient.getManifest(videoId);
         var audioUrl = manifest.audioOnly.last.url;
 
-        newPlayInfo.newUrlMusic!
-            .addAll({musicName: UrlSource(audioUrl.toString())});
-        setState(() {});
+        songURL.add(AudioSource.uri(audioUrl));
         break;
       }
+      setState(() {});
     }
+    playlist = ConcatenatingAudioSource(
+        useLazyPreparation: true, children: songURL);
+
+    await player.setAudioSource(playlist,
+        initialIndex: 0, initialPosition: Duration.zero);
+
+    setState(() => allLoad = true);
+  }
+
+  Future<void> passMusic(String lado) async {
+    setState(() => newPlayInfo.loading = true);
+    if (lado == 'Left') {
+      await player.seekToPrevious();
+    }
+    if (lado == 'Right') {
+      await player.seekToNext();
+    }
+    setState(() => newPlayInfo.loading = false);
   }
 
   @override
@@ -92,9 +100,8 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
       value.tracks?.itemsNative?.forEach((value) {
         newPlayInfo.songList!.add(value['track']['name']);
         newPlayInfo.imageList!.add(value['track']['album']['images'][0]['url']);
-        setState(() {});
       });
-    });
+    }).then((value) => getUrlMusic());
 
     super.initState();
   }
@@ -110,7 +117,7 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
         iconTheme: const IconThemeData(color: Colors.white),
         title: Row(
           children: [
-            if (newPlayInfo.songList!.isNotEmpty)
+            if (allLoad)
               SizedBox(
                 width: width * 0.14,
                 height: height * 0.14,
@@ -129,7 +136,7 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
           ],
         ),
       ),
-      body: newPlayInfo.songList!.isNotEmpty
+      body: allLoad
           ? SingleChildScrollView(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -141,12 +148,13 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(2),
                       child: Image.network(newPlayInfo.imageList!
-                          .elementAtOrNull(newPlayInfo.pass!)!),
+                          .elementAtOrNull(player.currentIndex ?? 0)!),
                     ),
                   ),
                   SizedBox(height: size.height * 0.05),
                   Text(
-                    newPlayInfo.songList!.elementAtOrNull(newPlayInfo.pass!) ??
+                    newPlayInfo.songList!
+                            .elementAtOrNull(player.currentIndex ?? 0) ??
                         '',
                     textAlign: TextAlign.center,
                     overflow: TextOverflow.ellipsis,
@@ -158,21 +166,17 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                   SizedBox(
                     width: size.width * 0.80,
                     child: StreamBuilder(
-                      stream: player.onPositionChanged,
+                      stream: player.positionStream,
                       builder: (context, data) {
                         newPlayInfo.musica = data.data;
-                        if (newPlayInfo.reiniciar != newPlayInfo.pass) {
-                          newPlayInfo.reiniciar = newPlayInfo.pass;
-                          newPlayInfo.musica = const Duration(seconds: 0);
-                        }
-
                         return ProgressBar(
                           progress:
                               newPlayInfo.musica ?? const Duration(seconds: 0),
                           total: newPlayInfo.newDurationMusic?[newPlayInfo
                                   .songList!
-                                  .elementAt(newPlayInfo.pass!)] ??
+                                  .elementAt(player.currentIndex ?? 0)] ??
                               const Duration(seconds: 0),
+                          buffered: player.bufferedPosition,
                           bufferedBarColor: Colors.grey,
                           baseBarColor: Colors.white,
                           thumbColor: Colors.green,
@@ -182,8 +186,6 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                           progressBarColor: Colors.green[900],
                           onSeek: (duration) async {
                             await player.seek(duration);
-                            await player.resume();
-                            setState(() {});
                           },
                         );
                       },
@@ -194,32 +196,24 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                     children: [
                       TextButton(
                         onPressed: () async {
-                          if (newPlayInfo.pass != 0) {
-                            await player.pause();
-                            newPlayInfo.pass = newPlayInfo.pass! - 1;
-                            newPlayInfo.musica = const Duration(seconds: 0);
-                            setState(() {});
-                          }
+                          await passMusic('Left');
                         },
                         child: Icon(
-                          newPlayInfo.pass == 0
+                          player.hasPrevious
                               ? Icons.arrow_circle_left_outlined
                               : Icons.arrow_circle_left,
                           size: width * 0.14,
-                          color: Colors.white,
+                          color: player.hasPrevious ? Colors.white : Colors.red,
                         ),
                       ),
                       Stack(
                         children: [
                           TextButton(
                             onPressed: () async {
-                              await play(
-                                  newPlayInfo.songList!
-                                      .elementAt(newPlayInfo.pass!),
-                                  newPlayInfo.artistName!);
+                              await play();
                             },
                             child: Icon(
-                              player.state == PlayerState.playing
+                              player.playing
                                   ? Icons.pause_circle
                                   : Icons.play_circle,
                               size: (size.width + size.height) * 0.08,
@@ -244,20 +238,14 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                       ),
                       TextButton(
                         onPressed: () async {
-                          if (newPlayInfo.pass !=
-                              newPlayInfo.songList!.length - 1) {
-                            await player.pause();
-                            newPlayInfo.pass = newPlayInfo.pass! + 1;
-                            newPlayInfo.musica = const Duration(seconds: 0);
-                            setState(() {});
-                          }
+                          await passMusic('Right');
                         },
                         child: Icon(
-                          newPlayInfo.pass == newPlayInfo.songList!.length - 1
+                          player.hasNext
                               ? Icons.arrow_circle_right_outlined
                               : Icons.arrow_circle_right,
                           size: width * 0.14,
-                          color: Colors.white,
+                          color: player.hasNext ? Colors.white : Colors.red,
                         ),
                       ),
                     ],
@@ -265,7 +253,24 @@ class _PlayPlaylistState extends State<PlayPlaylist> {
                 ],
               ),
             )
-          : const Center(child: CircularProgressIndicator(color: Colors.green)),
+          : Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Loading ${newPlayInfo.songList!.isEmpty ? '' : '(${((songURL.length / newPlayInfo.songList!.length) * 100).round()} %)'}',
+                    style:
+                        TextStyle(color: Colors.white, fontSize: width * 0.08),
+                  ),
+                  SizedBox(height: height * 0.03),
+                  SizedBox(
+                      width: width * 0.2,
+                      height: height * 0.1,
+                      child:
+                          const CircularProgressIndicator(color: Colors.green)),
+                ],
+              ),
+            ),
     );
   }
 }

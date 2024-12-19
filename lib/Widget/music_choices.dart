@@ -60,7 +60,7 @@ class MusicChoices extends StatelessWidget {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => PlayPlaylist(trackId: spotify)));
+                          builder: (_) => PlayMusic(trackId: spotify)));
                 },
                 child:  SizedBox(
                   width: width * 0.5,

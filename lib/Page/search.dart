@@ -1,5 +1,5 @@
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:projeto_spotify/Models/search_model.dart';
 import 'package:projeto_spotify/Widget/search_play.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
@@ -236,7 +236,7 @@ class _SearchState extends State<Search> {
                                 var audioUrl = manifest.audioOnly.last.url;
 
                                 searchModel.urlSound!
-                                    .add(UrlSource(audioUrl.toString()));
+                                    .add(AudioSource.uri(audioUrl));
                               } catch (error) {
                                 for (int errors = 0;
                                     errors != maybeError - 1;

@@ -1,7 +1,7 @@
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:spotify/spotify.dart' as sptf;
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import 'package:just_audio/just_audio.dart';
 
 import '../Utils/constants.dart';
 import '../Models/new_play_info.dart';
@@ -17,77 +17,79 @@ class PlaylistStyle extends StatefulWidget {
 
 class _PlaylistStyleState extends State<PlaylistStyle> {
   final player = AudioPlayer();
+  Map<int, AudioSource> mapSongURL = {};
+  List<String> descriptionList = [];
 
   NewPlayInfo newPlayInfo = NewPlayInfo(
     songList: {},
     imageList: [],
-    descriptionList: [],
-    newUrlMusic: {},
     newDurationMusic: {},
     loading: false,
     otherMusic: false,
   );
 
-  Future<void> playBottom(String musicName, String artistName,
-      [bool? newMusic]) async {
-    if (newPlayInfo.currentSong != null) {
-      setState(() => newPlayInfo.loading = true);
-      await getUrlMusic(musicName, artistName);
+  Future<void> playBottom([bool? newMusic]) async {
+    setState(() => newPlayInfo.loading = true);
 
-      if (newMusic == true) {
-        player.stop();
+    if (newMusic == true) {
+      player.stop();
 
-        setState(() {
-          newPlayInfo.loading = true;
-          newPlayInfo.otherMusic = true;
-        });
+      await getUrlMusic();
 
-        await player.play(newPlayInfo.newUrlMusic![musicName]!);
+      setState(() {
+        newPlayInfo.otherMusic = true;
+      });
 
-        setState(() {
-          newPlayInfo.loading = false;
-          newPlayInfo.otherMusic = false;
-        });
-      } else if (player.state == PlayerState.stopped ||
-          player.state == PlayerState.paused) {
-        setState(() => newPlayInfo.loading = true);
+      await player.setAudioSource(mapSongURL[newPlayInfo.currentSong!]!,
+          initialPosition: Duration.zero);
 
-        await player.play(newPlayInfo.newUrlMusic![musicName]!);
+      setState(() {
+        newPlayInfo.loading = false;
+        newPlayInfo.otherMusic = false;
+      });
 
-        setState(() => newPlayInfo.loading = false);
-      } else {
-        await player.pause();
-        setState(() => newPlayInfo.loading = false);
-      }
-      setState(() {});
+      await player.play();
+    } else if (!player.playing) {
+      setState(() => newPlayInfo.loading = false);
+      player.play();
+    } else {
+      await player.pause();
+      setState(() => newPlayInfo.loading = false);
     }
+    setState(() {});
   }
 
-  Future<void> getUrlMusic(String musicName, String artistName) async {
-    if (!newPlayInfo.newUrlMusic!.containsKey(musicName)) {
-      int indexVideos = 0;
-      final yt = YoutubeExplode();
-      for (int index = 0; index < 20; index++) {
-        final video = (await yt.search.search(
-            filter: TypeFilters.video, "$musicName $artistName"))[indexVideos];
+  Future<void> getUrlMusic() async {
+    if (mapSongURL.containsKey(newPlayInfo.currentSong)) {
+      return;
+    }
 
-        if (video.duration! > const Duration(minutes: 20)) {
-          indexVideos++;
-          continue;
-        }
+    int indexVideos = 0;
+    final yt = YoutubeExplode();
+    for (int index = 0; index < 20; index++) {
+      final video = (await yt.search.search(
+              filter: TypeFilters.video,
+              "${newPlayInfo.songList!.elementAt(newPlayInfo.currentSong!)} ${descriptionList.elementAt(newPlayInfo.currentSong!)} music"))[
+          indexVideos];
 
-        final videoId = video.id.value;
-        // newPlayInfo.durationList!.add(video.duration!);
-        newPlayInfo.newDurationMusic!.addAll({musicName: video.duration!});
-
-        var manifest = await yt.videos.streamsClient.getManifest(videoId);
-        var audioUrl = manifest.audioOnly.last.url;
-
-        newPlayInfo.newUrlMusic!
-            .addAll({musicName: UrlSource(audioUrl.toString())});
-        setState(() {});
-        break;
+      if (video.duration! > const Duration(minutes: 20)) {
+        indexVideos++;
+        continue;
       }
+
+      final videoId = video.id.value;
+
+      newPlayInfo.newDurationMusic!.addAll({
+        newPlayInfo.songList!.elementAt(newPlayInfo.currentSong!):
+            video.duration!
+      });
+
+      var manifest = await yt.videos.streamsClient.getManifest(videoId);
+      var audioUrl = manifest.audioOnly.last.url;
+
+      mapSongURL.addAll({newPlayInfo.currentSong!: AudioSource.uri(audioUrl)});
+      setState(() {});
+      break;
     }
   }
 
@@ -104,7 +106,7 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
       value.tracks?.itemsNative?.forEach((value) {
         newPlayInfo.songList!.add(value['track']['name']);
         newPlayInfo.imageList!.add(value['track']['album']['images'][0]['url']);
-        newPlayInfo.descriptionList!.add(value['track']['artists'][0]['name']);
+        descriptionList.add(value['track']['artists'][0]['name']);
       });
 
       setState(() {});
@@ -186,7 +188,7 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                                   color: Colors.transparent,
                                   child: Text(
                                     overflow: TextOverflow.ellipsis,
-                                    newPlayInfo.descriptionList!
+                                    descriptionList
                                         .elementAt(index),
                                     style: const TextStyle(
                                         fontSize: 20, color: Colors.white),
@@ -200,26 +202,15 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                               shape: const CircleBorder(),
                             ),
                             onPressed: () async {
-                              if (newPlayInfo.currentSong != index &&
-                                  player.state == PlayerState.playing) {
+                              if (newPlayInfo.currentSong != index) {
                                 newPlayInfo.currentSong = index;
-                                await playBottom(
-                                    newPlayInfo.songList!
-                                        .elementAt(newPlayInfo.currentSong!),
-                                    newPlayInfo.descriptionList!
-                                        .elementAt(newPlayInfo.currentSong!),
-                                    true);
+                                await playBottom(true);
                               } else {
                                 if (newPlayInfo.currentSong != index) {
                                   setState(() => newPlayInfo.otherMusic = true);
                                 }
                                 newPlayInfo.currentSong = index;
-                                await playBottom(
-                                  newPlayInfo.songList!
-                                      .elementAt(newPlayInfo.currentSong!),
-                                  newPlayInfo.descriptionList!
-                                      .elementAt(newPlayInfo.currentSong!),
-                                );
+                                await playBottom();
                                 setState(() => newPlayInfo.otherMusic = false);
                               }
                               setState(() {});
@@ -229,7 +220,7 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                                 if (newPlayInfo.loading == false ||
                                     newPlayInfo.currentSong != index)
                                   Icon(
-                                    (player.state == PlayerState.playing &&
+                                    (player.playing &&
                                             newPlayInfo.currentSong == index)
                                         ? Icons.pause_circle
                                         : Icons.play_circle,
@@ -252,15 +243,15 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                     : const Placeholder(color: Colors.transparent);
               },
             ),
-            if (player.state != PlayerState.stopped)
+            if (player.currentIndex != null)
               Positioned(
                 bottom: 0,
                 child: WhatsPlaying(
                   nameMusic:
                       newPlayInfo.songList!.elementAt(newPlayInfo.currentSong!),
                   imageMusic: newPlayInfo.imageList![newPlayInfo.currentSong!],
-                  descriptionMusic: newPlayInfo.descriptionList!
-                      .elementAt(newPlayInfo.currentSong!),
+                  descriptionMusic:
+                      descriptionList.elementAt(newPlayInfo.currentSong!),
                   playBottom: playBottom,
                   player: player,
                   otherMusic: newPlayInfo.otherMusic!,

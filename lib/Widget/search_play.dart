@@ -1,7 +1,7 @@
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:text_scroll/text_scroll.dart';
+import 'package:just_audio/just_audio.dart';
 
 class SearchPlay extends StatefulWidget {
   final String title;
@@ -10,7 +10,7 @@ class SearchPlay extends StatefulWidget {
   final DateTime uploadDate;
   final String uploadDateRaw;
   final String duration;
-  final UrlSource urlSound;
+  final AudioSource urlSound;
 
   const SearchPlay({
     super.key,
@@ -58,11 +58,14 @@ class _SearchPlayState extends State<SearchPlay> {
   }
 
   Future<void> play() async {
-    if (player.state == PlayerState.stopped ||
-        player.state == PlayerState.paused) {
+    if (player.currentIndex == null) {
+      player.setAudioSource(widget.urlSound);
+    }
+
+    if (!player.playing) {
       setState(() => loading = true);
 
-      await player.play(widget.urlSound);
+      await player.play();
 
       setState(() => loading = false);
     } else {
@@ -136,11 +139,12 @@ class _SearchPlayState extends State<SearchPlay> {
             SizedBox(
               width: width * 0.80,
               child: StreamBuilder(
-                stream: player.onPositionChanged,
+                stream: player.positionStream,
                 builder: (context, data) {
                   return ProgressBar(
                     progress: data.data ?? const Duration(seconds: 0),
                     total: stringToDuration(widget.duration),
+                    buffered: player.bufferedPosition,
                     bufferedBarColor: Colors.grey,
                     baseBarColor: Colors.white,
                     thumbColor: Colors.green[700],
@@ -149,8 +153,6 @@ class _SearchPlayState extends State<SearchPlay> {
                     progressBarColor: Colors.green[700],
                     onSeek: (duration) async {
                       await player.seek(duration);
-                      await player.resume();
-                      setState(() {});
                     },
                   );
                 },
@@ -163,7 +165,7 @@ class _SearchPlayState extends State<SearchPlay> {
               child: Stack(
                 children: [
                   Icon(
-                    player.state == PlayerState.playing
+                    player.playing
                         ? Icons.pause_circle_outline
                         : Icons.play_circle_outline,
                     size: width * 0.38,
