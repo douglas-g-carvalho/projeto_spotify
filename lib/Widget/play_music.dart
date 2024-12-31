@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:projeto_spotify/Widget/music_player.dart';
 import 'package:spotify/spotify.dart' as sptf;
-import 'package:youtube_explode_dart/youtube_explode_dart.dart';
-import 'package:just_audio/just_audio.dart';
+
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 
 import '../Utils/constants.dart';
-import '../Models/new_play_info.dart';
 
 class PlayMusic extends StatefulWidget {
   final String trackId;
@@ -16,94 +15,39 @@ class PlayMusic extends StatefulWidget {
 }
 
 class _PlayMusicState extends State<PlayMusic> {
-  final player = AudioPlayer();
-  late ConcatenatingAudioSource playlist;
-  List<AudioSource> songURL = [];
+  final musicPlayer = MusicPlayer();
+
   bool allLoad = false;
-
-  NewPlayInfo newPlayInfo = NewPlayInfo(
-    songList: {},
-    imageList: [],
-    newDurationMusic: {},
-    musica: const Duration(seconds: 0),
-    loading: false,
-  );
-
-  Future<void> play() async {
-    setState(() => newPlayInfo.loading = true);
-    if (!player.playing) {
-      setState(() => newPlayInfo.loading = false);
-      await player.play();
-    } else {
-      await player.pause();
-      setState(() => newPlayInfo.loading = false);
-    }
-  }
-
-  Future<void> getUrlMusic() async {
-    for (String musicName in newPlayInfo.songList!) {
-      int indexVideos = 0;
-      final yt = YoutubeExplode();
-      for (int index = 0; index < 20; index++) {
-        final video = (await yt.search.search(
-            filter: TypeFilters.video,
-            "$musicName ${newPlayInfo.artistName}"))[indexVideos];
-
-        if (video.duration! > const Duration(minutes: 20)) {
-          indexVideos++;
-          continue;
-        }
-
-        final videoId = video.id.value;
-        newPlayInfo.newDurationMusic!.addAll({musicName: video.duration!});
-
-        var manifest = await yt.videos.streamsClient.getManifest(videoId);
-        var audioUrl = manifest.audioOnly.last.url;
-
-        songURL.add(AudioSource.uri(audioUrl));
-        break;
-      }
-      setState(() {});
-    }
-    playlist = ConcatenatingAudioSource(
-        useLazyPreparation: true, children: songURL);
-
-    await player.setAudioSource(playlist,
-        initialIndex: 0, initialPosition: Duration.zero);
-
-    setState(() => allLoad = true);
-  }
-
-  Future<void> passMusic(String lado) async {
-    setState(() => newPlayInfo.loading = true);
-    if (lado == 'Left') {
-      await player.seekToPrevious();
-    }
-    if (lado == 'Right') {
-      await player.seekToNext();
-    }
-    setState(() => newPlayInfo.loading = false);
-  }
+  bool loading = false;
+  Duration musica = const Duration(seconds: 0);
 
   @override
   void initState() {
-    newPlayInfo.trackId = widget.trackId;
     final credentials =
         sptf.SpotifyApiCredentials(Constants.clientId, Constants.clientSecret);
     final spotify = sptf.SpotifyApi(credentials);
 
-    spotify.playlists.get(newPlayInfo.trackId!).then((value) {
-      newPlayInfo.artistName = value.name;
-      newPlayInfo.artistImage = value.images?.first.url;
-      newPlayInfo.totalSongs = value.tracks?.total;
+    spotify.playlists.get(widget.trackId).then((value) {
+      musicPlayer.artistName.add(value.name!);
+      musicPlayer.artistImage.add(value.images!.first.url!);
 
       value.tracks?.itemsNative?.forEach((value) {
-        newPlayInfo.songList!.add(value['track']['name']);
-        newPlayInfo.imageList!.add(value['track']['album']['images'][0]['url']);
+        if (musicPlayer.songList.length <= 10) {
+          musicPlayer.songList.add(value['track']['name']);
+          musicPlayer.imageList
+              .add(value['track']['album']['images'][0]['url']);
+        }
+        setState(() {});
       });
-    }).then((value) => getUrlMusic());
+    }).then((value) => setState(() => allLoad = true));
 
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    musicPlayer.player.dispose();
+    super.dispose();
   }
 
   @override
@@ -123,13 +67,14 @@ class _PlayMusicState extends State<PlayMusic> {
                 height: height * 0.14,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(2),
-                  child: Image.network(newPlayInfo.artistImage!),
+                  child: Image.network(
+                      musicPlayer.artistImage.elementAtOrNull(0) ?? ''),
                 ),
               ),
-            SizedBox(width: width * 0.02),
+            SizedBox(width: width * 0.01),
             Expanded(
               child: Text(
-                newPlayInfo.artistName ?? '',
+                musicPlayer.artistName.elementAtOrNull(0) ?? '',
                 style: TextStyle(color: Colors.white, fontSize: width * 0.065),
               ),
             ),
@@ -141,20 +86,20 @@ class _PlayMusicState extends State<PlayMusic> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  SizedBox(height: size.height * 0.15),
+                  SizedBox(height: size.height * 0.07),
                   SizedBox(
                     width: size.width * 1,
                     height: size.height * 0.4,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(2),
-                      child: Image.network(newPlayInfo.imageList!
-                          .elementAtOrNull(player.currentIndex ?? 0)!),
+                      child: Image.network(musicPlayer.imageList
+                          .elementAtOrNull(musicPlayer.songIndex)!),
                     ),
                   ),
                   SizedBox(height: size.height * 0.05),
                   Text(
-                    newPlayInfo.songList!
-                            .elementAtOrNull(player.currentIndex ?? 0) ??
+                    musicPlayer.songList
+                            .elementAtOrNull(musicPlayer.songIndex) ??
                         '',
                     textAlign: TextAlign.center,
                     overflow: TextOverflow.ellipsis,
@@ -166,17 +111,15 @@ class _PlayMusicState extends State<PlayMusic> {
                   SizedBox(
                     width: size.width * 0.80,
                     child: StreamBuilder(
-                      stream: player.positionStream,
+                      stream: musicPlayer.player.positionStream,
                       builder: (context, data) {
-                        newPlayInfo.musica = data.data;
+                        musica = data.data ?? Duration.zero;
                         return ProgressBar(
-                          progress:
-                              newPlayInfo.musica ?? const Duration(seconds: 0),
-                          total: newPlayInfo.newDurationMusic?[newPlayInfo
-                                  .songList!
-                                  .elementAt(player.currentIndex ?? 0)] ??
-                              const Duration(seconds: 0),
-                          buffered: player.bufferedPosition,
+                          progress: musica,
+                          total: musicPlayer.mapDuration[musicPlayer.songList
+                                  .elementAt(musicPlayer.songIndex)] ??
+                              Duration.zero,
+                          buffered: musicPlayer.player.bufferedPosition,
                           bufferedBarColor: Colors.grey,
                           baseBarColor: Colors.white,
                           thumbColor: Colors.green,
@@ -185,7 +128,7 @@ class _PlayMusicState extends State<PlayMusic> {
                               const TextStyle(color: Colors.white),
                           progressBarColor: Colors.green[900],
                           onSeek: (duration) async {
-                            await player.seek(duration);
+                            await musicPlayer.player.seek(duration);
                           },
                         );
                       },
@@ -196,33 +139,58 @@ class _PlayMusicState extends State<PlayMusic> {
                     children: [
                       TextButton(
                         onPressed: () async {
-                          await passMusic('Left');
+                          if (musicPlayer.songIndex != 0) {
+                            setState(() => loading = true);
+                            await musicPlayer.passMusic('Left');
+                            setState(() => loading = false);
+                          }
                         },
                         child: Icon(
-                          player.hasPrevious
+                          musicPlayer.songIndex != 0
                               ? Icons.arrow_circle_left_outlined
                               : Icons.arrow_circle_left,
                           size: width * 0.14,
-                          color: player.hasPrevious ? Colors.white : Colors.red,
+                          color: musicPlayer.songIndex != 0
+                              ? Colors.white
+                              : Colors.red,
                         ),
                       ),
                       Stack(
                         children: [
                           TextButton(
                             onPressed: () async {
-                              await play();
+                              setState(() => loading = true);
+
+                              // checa se a música existe no mapSongURL
+                              if (!musicPlayer.mapSongURL.containsKey(
+                                  musicPlayer.songList
+                                      .elementAt(musicPlayer.songIndex))) {
+                                await musicPlayer.getUrlMusic(
+                                    musicPlayer.songList
+                                        .elementAt(musicPlayer.songIndex),
+                                    musicPlayer.artistName.elementAt(0));
+                                // checa se a música sendo tocada é a nova;
+                              } else if (musicPlayer.actualSong !=
+                                  musicPlayer.songList
+                                      .elementAt(musicPlayer.songIndex)) {
+                                await musicPlayer.setAudioSource(musicPlayer
+                                    .songList
+                                    .elementAt(musicPlayer.songIndex));
+                              }
+
+                              await musicPlayer.play();
+                              setState(() => loading = false);
                             },
                             child: Icon(
-                              player.playing
+                              musicPlayer.player.playing
                                   ? Icons.pause_circle
                                   : Icons.play_circle,
                               size: (size.width + size.height) * 0.08,
-                              color: newPlayInfo.loading!
-                                  ? Colors.transparent
-                                  : Colors.white,
+                              color:
+                                  loading ? Colors.transparent : Colors.white,
                             ),
                           ),
-                          if (newPlayInfo.loading!)
+                          if (loading)
                             Positioned(
                               right: size.width * 0.05,
                               bottom: size.height * 0.021,
@@ -238,14 +206,23 @@ class _PlayMusicState extends State<PlayMusic> {
                       ),
                       TextButton(
                         onPressed: () async {
-                          await passMusic('Right');
+                          if (musicPlayer.songIndex !=
+                              musicPlayer.songList.length - 1) {
+                            setState(() => loading = true);
+                            await musicPlayer.passMusic('Right');
+                            setState(() => loading = false);
+                          }
                         },
                         child: Icon(
-                          player.hasNext
+                          musicPlayer.songIndex !=
+                                  musicPlayer.songList.length - 1
                               ? Icons.arrow_circle_right_outlined
                               : Icons.arrow_circle_right,
                           size: width * 0.14,
-                          color: player.hasNext ? Colors.white : Colors.red,
+                          color: musicPlayer.songIndex !=
+                                  musicPlayer.songList.length - 1
+                              ? Colors.white
+                              : Colors.red,
                         ),
                       ),
                     ],
@@ -254,22 +231,10 @@ class _PlayMusicState extends State<PlayMusic> {
               ),
             )
           : Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Loading ${newPlayInfo.songList!.isEmpty ? '' : '(${((songURL.length / newPlayInfo.songList!.length) * 100).round()} %)'}',
-                    style:
-                        TextStyle(color: Colors.white, fontSize: width * 0.08),
-                  ),
-                  SizedBox(height: height * 0.03),
-                  SizedBox(
-                      width: width * 0.2,
-                      height: height * 0.1,
-                      child:
-                          const CircularProgressIndicator(color: Colors.green)),
-                ],
-              ),
+              child: SizedBox(
+                  width: width * 0.2,
+                  height: height * 0.1,
+                  child: const CircularProgressIndicator(color: Colors.green)),
             ),
     );
   }

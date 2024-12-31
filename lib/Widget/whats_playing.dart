@@ -1,14 +1,12 @@
-import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart';
+import 'package:projeto_spotify/Widget/music_player.dart';
 
 class WhatsPlaying extends StatefulWidget {
   final String nameMusic;
   final String imageMusic;
   final String descriptionMusic;
-  final Function([bool]) playBottom;
-  final AudioPlayer player;
-  final bool otherMusic;
+  final MusicPlayer musicPlayer;
+  final bool loading;
   final Duration duration;
 
   const WhatsPlaying({
@@ -16,9 +14,8 @@ class WhatsPlaying extends StatefulWidget {
     required this.nameMusic,
     required this.imageMusic,
     required this.descriptionMusic,
-    required this.playBottom,
-    required this.player,
-    required this.otherMusic,
+    required this.musicPlayer,
+    required this.loading,
     required this.duration,
   });
 
@@ -27,17 +24,11 @@ class WhatsPlaying extends StatefulWidget {
 }
 
 class _WhatsPlayingState extends State<WhatsPlaying> {
-  Duration? timeStamp = const Duration(seconds: 0);
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final width = size.width;
     final height = size.height;
-
-    if (widget.otherMusic) {
-      timeStamp = const Duration(seconds: 0);
-    }
 
     return Container(
       decoration: BoxDecoration(
@@ -77,48 +68,29 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                     style: const TextStyle(color: Colors.white, fontSize: 20),
                   ),
                 ),
-                SizedBox(
-                  width: size.width * 0.482,
-                  child: StreamBuilder(
-                    stream: widget.player.positionStream,
-                    builder: (context, data) {
-                      timeStamp = data.data;
-                      return ProgressBar(
-                        progress: timeStamp ?? const Duration(seconds: 0),
-                        total: widget.duration,
-                        buffered: widget.player.bufferedPosition,
-                        bufferedBarColor: Colors.grey,
-                        baseBarColor: Colors.white,
-                        thumbColor: Colors.green,
-                        thumbRadius: 7,
-                        timeLabelTextStyle:
-                            const TextStyle(color: Colors.white),
-                        progressBarColor: Colors.green[900],
-                        onSeek: (duration) async {
-                          await widget.player.seek(duration);
-                        },
-                      );
-                    },
-                  ),
-                ),
+                widget.musicPlayer
+                    .progressBar(size.width * 0.482, widget.duration),
               ],
             ),
           ),
           TextButton(
             onPressed: () async {
-              await widget.playBottom();
+              if (widget.musicPlayer.loop == false) {
+                widget.musicPlayer.loop = true;
+              }
+              await widget.musicPlayer.play();
               setState(() {});
             },
             child: Stack(
               children: [
-                widget.otherMusic
+                widget.loading
                     ? SizedBox(
                         width: ((width + height) * 0.05),
                         height: ((width + height) * 0.05),
                         child: const CircularProgressIndicator(
                             color: Colors.green))
                     : Icon(
-                        (widget.player.playing)
+                        (widget.musicPlayer.player.playing)
                             ? Icons.pause
                             : Icons.play_arrow,
                         color: Colors.green,

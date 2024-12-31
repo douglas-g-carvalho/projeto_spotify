@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:projeto_spotify/Utils/groups.dart';
+import 'package:provider/provider.dart';
+
+import 'package:projeto_spotify/Widget/music_player.dart';
 import 'package:projeto_spotify/Utils/app_routes.dart';
 import 'package:projeto_spotify/Page/search.dart';
 
@@ -6,11 +10,21 @@ import 'Page/tela_inicial.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
+
+  runApp(
+    MultiProvider(
+      providers: [
+        Provider(create: (context) => MusicPlayer()),
+        Provider(create: (context) => Groups()),
+      ],
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  MyApp({super.key});
+  final group = Groups();
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +40,9 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       routes: {
-        AppRoutes.inicio: (ctx) => const TelaInicial(),
+        AppRoutes.inicio: (ctx) => TelaInicial(
+              group: group,
+            ),
         AppRoutes.buscar: (ctx) => const Search(),
       },
     );

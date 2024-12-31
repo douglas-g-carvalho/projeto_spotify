@@ -1,24 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:projeto_spotify/Widget/mixes_mais_ouvidos.dart';
 
-import '../Widget/basic_choices.dart';
+import '../Utils/groups.dart';
 import '../Widget/eighty_music.dart';
 
 class TelaInicial extends StatefulWidget {
-  const TelaInicial({super.key});
+  final Groups group;
+  const TelaInicial({required this.group, super.key});
 
   @override
   State<TelaInicial> createState() => _TelaInicialState();
 }
 
 class _TelaInicialState extends State<TelaInicial> {
-  List<bool> hudChoice = [true, false, false];
-
   @override
   Widget build(BuildContext context) {
-    void change(List<bool> hud) {
-      setState(() => hudChoice = hud);
-    }
+    final size = MediaQuery.of(context).size;
 
     return Scaffold(
       bottomNavigationBar: BottomNavigationBar(
@@ -46,16 +43,20 @@ class _TelaInicialState extends State<TelaInicial> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              BasicChoices(hud: hudChoice, changeHud: change),
-              const SizedBox(height: 10),
-              if (hudChoice[0] || hudChoice[1])
-                const Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    EightyMusic(),
-                    MixesMaisOuvidos(),
-                  ],
-                ),
+              SizedBox(height: size.height * 0.04),
+              Text(
+                'Spotify Fake',
+                style:
+                    TextStyle(color: Colors.white, fontSize: size.width * 0.08),
+              ),
+              SizedBox(height: size.height * 0.01),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  EightyMusic(group: widget.group),
+                  MixesMaisOuvidos(group: widget.group),
+                ],
+              ),
             ],
           ),
         ),

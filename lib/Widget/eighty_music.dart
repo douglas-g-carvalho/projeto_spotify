@@ -2,28 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:spotify/spotify.dart';
 
 import '../Utils/constants.dart';
+import '../Utils/groups.dart';
 import 'music_choices.dart';
 
 class EightyMusic extends StatefulWidget {
-  const EightyMusic({super.key});
+  final Groups group;
+
+  const EightyMusic({required this.group, super.key});
 
   @override
   State<EightyMusic> createState() => _EightyMusicState();
 }
 
 class _EightyMusicState extends State<EightyMusic> {
-  final List<String> listGroups = [
-    '6AsR0V6KWciPEVnZfIFKnX',
-    '2AltltuDppkFyGloecxjzs',
-    '6bpPKPIWEPnvLmqRc7GLzw',
-    '08eJerYHHTin58iXQjQHpK',
-    '5tEzEAdmKqsugZxOq9YajR',
-    '60egqvG5M5ilZM8Js4hCkG',
-    '7234K2ZNVmAfetWuSguT7V',
-    '0Mgok0vqQjNAsLV5WyJvAq',
-  ];
+  late List<String> list = widget.group.getListGroup();
 
-  final Map<int, Map<String, String>> mapMusics = {};
+  Map<int, Map<String, String>> mapMusics = {};
 
   ScrollController scrollController = ScrollController(
     initialScrollOffset: 100,
@@ -35,21 +29,27 @@ class _EightyMusicState extends State<EightyMusic> {
     final credentials =
         SpotifyApiCredentials(Constants.clientId, Constants.clientSecret);
     final spotify = SpotifyApi(credentials);
-    for (int index = 0; index != listGroups.length; index++) {
-      spotify.playlists.get(listGroups[index]).then((value) {
+    if (widget.group.getMapMusics().isNotEmpty) {
+      mapMusics = widget.group.getMapMusics();
+      return;
+    }
+
+    for (int index = 0; index != list.length; index++) {
+      spotify.playlists.get(list[index]).then((value) {
         try {
-          mapMusics.addAll({
-            index: {'name': value.name!}
-          });
-          mapMusics[index]!.addAll({'cover': value.images!.first.url!});
-          mapMusics[index]!.addAll({'spotify': value.id!});
-          setState(() {});
+          widget.group.addMapMusics(index, 'name', value.name!);
+          widget.group.addMapMusics(index, 'cover', value.images!.first.url!);
+          widget.group.addMapMusics(index, 'spotify', value.id!);
         } catch (error) {
-          mapMusics.remove(index);
+          widget.group.removeMapMusics(index);
           index -= 1;
         }
+
+        mapMusics = widget.group.getMapMusics();
+        setState(() {});
       });
     }
+
     super.initState();
   }
 
@@ -65,7 +65,7 @@ class _EightyMusicState extends State<EightyMusic> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // vai do mapMusics de 0 a 3;
-          if (mapMusics.length == listGroups.length)
+          if (mapMusics.length == list.length)
             SizedBox(
               width: width * 0.475,
               height: height * 0.40,
@@ -90,7 +90,7 @@ class _EightyMusicState extends State<EightyMusic> {
             height: height * 0.40,
           ),
           // vai do mapMusics de 4 a 7;
-          if (mapMusics.length == listGroups.length)
+          if (mapMusics.length == list.length)
             SizedBox(
               width: width * 0.475,
               height: height * 0.40,
@@ -110,7 +110,7 @@ class _EightyMusicState extends State<EightyMusic> {
                 },
               ),
             ),
-          if (mapMusics.length != listGroups.length)
+          if (mapMusics.length != list.length)
             const Center(child: CircularProgressIndicator(color: Colors.green)),
         ],
       ),

@@ -1,37 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:projeto_spotify/Widget/playlist_style.dart';
 
-import '../Utils/constants.dart';
 import 'package:spotify/spotify.dart' as sptf;
 
+import '../Utils/constants.dart';
+import '../Utils/groups.dart';
+
 class MixesMaisOuvidos extends StatefulWidget {
-  const MixesMaisOuvidos({super.key});
+  final Groups group;
+  const MixesMaisOuvidos({required this.group, super.key});
 
   @override
   State<MixesMaisOuvidos> createState() => _MixesMaisOuvidosState();
 }
 
 class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
-  final List<String> listGroups = [
-    '6G4O7YRLjTk4T4VPa4fDAM',
-    '7w13RcdObCa0WvQrjVJDfp',
-    '5z2dTZUjDD90wM4Z9youwS',
-  ];
+  late List<String> mixes = widget.group.getMixes();
 
-  List<String> artistImage = [];
-  List<String> playlistName = [];
-  List<String> listID = [];
+  Map<int, Map<String, String>> mapInfo = {};
 
   @override
   void initState() {
     final credentials =
         sptf.SpotifyApiCredentials(Constants.clientId, Constants.clientSecret);
     final spotify = sptf.SpotifyApi(credentials);
-    for (int index = 0; index != listGroups.length; index++) {
-      spotify.playlists.get(listGroups[index]).then((value) {
-        artistImage.add(value.images!.first.url!);
-        playlistName.add(value.name!);
-        listID.add(value.id!);
+
+    if (widget.group.getMapInfo().isNotEmpty) {
+      mapInfo = widget.group.getMapInfo();
+      return;
+    }
+
+    for (int index = 0; index != mixes.length; index++) {
+      spotify.playlists.get(mixes[index]).then((value) {
+        widget.group.addMapInfo(index, 'ID', value.id!);
+        widget.group.addMapInfo(index, 'Name', value.name!);
+        widget.group.addMapInfo(index, 'Image', value.images!.first.url!);
+
+        mapInfo = widget.group.getMapInfo();
         setState(() {});
       });
     }
@@ -47,9 +52,7 @@ class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
     return Column(
       children: [
         Text(
-          artistImage.length == listGroups.length
-              ? 'Alguns álbuns para você'
-              : '',
+          mapInfo.length == mixes.length ? 'Alguns álbuns para você' : '',
           style: TextStyle(color: Colors.white, fontSize: height * 0.03),
         ),
         const SizedBox(height: 5),
@@ -60,13 +63,13 @@ class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             shrinkWrap: true,
-            itemCount: listGroups.length,
+            itemCount: mixes.length,
             separatorBuilder: (BuildContext context, int index) =>
                 const SizedBox(width: 5),
             itemBuilder: (BuildContext context, int index) {
               return SingleChildScrollView(
                 physics: const NeverScrollableScrollPhysics(),
-                child: artistImage.length == listGroups.length
+                child: mapInfo.length == mixes.length
                     ? Stack(
                         clipBehavior: Clip.none,
                         children: [
@@ -75,7 +78,7 @@ class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
                             height: height * 0.22,
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(2),
-                              child: Image.network(artistImage[index]),
+                              child: Image.network(mapInfo[index]!['Image']!),
                             ),
                           ),
                           Positioned(
@@ -86,7 +89,7 @@ class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
                               child: Text(
                                 overflow: TextOverflow.clip,
                                 textAlign: TextAlign.center,
-                                playlistName[index],
+                                mapInfo[index]!['Name']!,
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: height * 0.025,
@@ -100,7 +103,7 @@ class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
                                   context,
                                   MaterialPageRoute(
                                       builder: (_) => PlaylistStyle(
-                                          trackId: listID[index])));
+                                          trackId: mapInfo[index]!['ID']!)));
                             },
                             style: ElevatedButton.styleFrom(
                               shape: const RoundedRectangleBorder(

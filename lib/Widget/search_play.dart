@@ -1,5 +1,5 @@
-import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:projeto_spotify/Widget/music_player.dart';
 import 'package:text_scroll/text_scroll.dart';
 import 'package:just_audio/just_audio.dart';
 
@@ -28,7 +28,7 @@ class SearchPlay extends StatefulWidget {
 }
 
 class _SearchPlayState extends State<SearchPlay> {
-  AudioPlayer player = AudioPlayer();
+  MusicPlayer musicPlayer = MusicPlayer();
   bool loading = false;
 
   Duration stringToDuration(String durationString) {
@@ -57,21 +57,10 @@ class _SearchPlayState extends State<SearchPlay> {
     }
   }
 
-  Future<void> play() async {
-    if (player.currentIndex == null) {
-      player.setAudioSource(widget.urlSound);
-    }
-
-    if (!player.playing) {
-      setState(() => loading = true);
-
-      await player.play();
-
-      setState(() => loading = false);
-    } else {
-      await player.pause();
-    }
-    setState(() {});
+  @override
+  void dispose() {
+    musicPlayer.player.dispose();
+    super.dispose();
   }
 
   @override
@@ -95,7 +84,7 @@ class _SearchPlayState extends State<SearchPlay> {
           children: [
             Icon(
               Icons.music_video,
-              size: width * 0.95,
+              size: width * 0.50,
               color: Colors.white,
             ),
             TextScroll(
@@ -136,54 +125,71 @@ class _SearchPlayState extends State<SearchPlay> {
               ],
             ),
             SizedBox(height: height * 0.01),
-            SizedBox(
-              width: width * 0.80,
-              child: StreamBuilder(
-                stream: player.positionStream,
-                builder: (context, data) {
-                  return ProgressBar(
-                    progress: data.data ?? const Duration(seconds: 0),
-                    total: stringToDuration(widget.duration),
-                    buffered: player.bufferedPosition,
-                    bufferedBarColor: Colors.grey,
-                    baseBarColor: Colors.white,
-                    thumbColor: Colors.green[700],
-                    thumbRadius: 7,
-                    timeLabelTextStyle: const TextStyle(color: Colors.white),
-                    progressBarColor: Colors.green[700],
-                    onSeek: (duration) async {
-                      await player.seek(duration);
-                    },
-                  );
-                },
-              ),
-            ),
-            TextButton(
-              onPressed: () async {
-                await play();
-              },
-              child: Stack(
-                children: [
-                  Icon(
-                    player.playing
-                        ? Icons.pause_circle_outline
-                        : Icons.play_circle_outline,
-                    size: width * 0.38,
-                    color: loading ? Colors.transparent : Colors.green,
+            // mudar o progress bar para o musicPlayer;
+            musicPlayer.progressBar(width * 0.80, stringToDuration(widget.duration)),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: () {},
+                  style:
+                      const ButtonStyle(splashFactory: NoSplash.splashFactory),
+                  child: Icon(
+                    Icons.shuffle,
+                    size: width * 0.12,
+                    color: Colors.grey,
                   ),
-                  Positioned(
-                    top: width * 0.04,
-                    right: width * 0.04,
-                    child: SizedBox(
-                      width: width * 0.3,
-                      height: height * 0.15,
-                      child: const CircularProgressIndicator(
-                        color: Colors.green,
+                ),
+                TextButton(
+                  onPressed: () async {
+                    if (musicPlayer.player.currentIndex == null) {
+                      setState(() => loading = true);
+                      await musicPlayer.player.setAudioSource(widget.urlSound);
+                    }
+
+                    if (!musicPlayer.player.playing) {
+                      musicPlayer.player.play();
+                    } else {
+                      await musicPlayer.player.pause();
+                    }
+                    setState(() => loading = false);
+                  },
+                  child: Stack(
+                    children: [
+                      Icon(
+                        musicPlayer.player.playing
+                            ? Icons.pause_circle_outline
+                            : Icons.play_circle_outline,
+                        size: width * 0.38,
+                        color: loading ? Colors.transparent : Colors.green,
                       ),
-                    ),
-                  )
-                ],
-              ),
+                      Positioned(
+                        top: width * 0.04,
+                        right: width * 0.04,
+                        child: SizedBox(
+                          width: width * 0.3,
+                          height: height * 0.15,
+                          child: const CircularProgressIndicator(
+                            color: Colors.green,
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    musicPlayer.loop = !musicPlayer.loop;
+                    setState(() {});
+                  },
+                  child: Icon(
+                    Icons.loop,
+                    size: width * 0.12,
+                    color: musicPlayer.loop ? Colors.green : Colors.white,
+                  ),
+                ),
+              ],
             ),
           ],
         ),

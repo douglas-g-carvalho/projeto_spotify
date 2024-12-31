@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:spotify/spotify.dart' as sptf;
-import 'package:youtube_explode_dart/youtube_explode_dart.dart';
-import 'package:just_audio/just_audio.dart';
+
+import 'package:projeto_spotify/Widget/music_player.dart';
+import 'whats_playing.dart';
 
 import '../Utils/constants.dart';
-import '../Models/new_play_info.dart';
-import 'whats_playing.dart';
 
 class PlaylistStyle extends StatefulWidget {
   final String trackId;
@@ -16,82 +15,10 @@ class PlaylistStyle extends StatefulWidget {
 }
 
 class _PlaylistStyleState extends State<PlaylistStyle> {
-  final player = AudioPlayer();
-  Map<int, AudioSource> mapSongURL = {};
-  List<String> descriptionList = [];
+  final musicPlayer = MusicPlayer();
 
-  NewPlayInfo newPlayInfo = NewPlayInfo(
-    songList: {},
-    imageList: [],
-    newDurationMusic: {},
-    loading: false,
-    otherMusic: false,
-  );
-
-  Future<void> playBottom([bool? newMusic]) async {
-    setState(() => newPlayInfo.loading = true);
-
-    if (newMusic == true) {
-      player.stop();
-
-      await getUrlMusic();
-
-      setState(() {
-        newPlayInfo.otherMusic = true;
-      });
-
-      await player.setAudioSource(mapSongURL[newPlayInfo.currentSong!]!,
-          initialPosition: Duration.zero);
-
-      setState(() {
-        newPlayInfo.loading = false;
-        newPlayInfo.otherMusic = false;
-      });
-
-      await player.play();
-    } else if (!player.playing) {
-      setState(() => newPlayInfo.loading = false);
-      player.play();
-    } else {
-      await player.pause();
-      setState(() => newPlayInfo.loading = false);
-    }
-    setState(() {});
-  }
-
-  Future<void> getUrlMusic() async {
-    if (mapSongURL.containsKey(newPlayInfo.currentSong)) {
-      return;
-    }
-
-    int indexVideos = 0;
-    final yt = YoutubeExplode();
-    for (int index = 0; index < 20; index++) {
-      final video = (await yt.search.search(
-              filter: TypeFilters.video,
-              "${newPlayInfo.songList!.elementAt(newPlayInfo.currentSong!)} ${descriptionList.elementAt(newPlayInfo.currentSong!)} music"))[
-          indexVideos];
-
-      if (video.duration! > const Duration(minutes: 20)) {
-        indexVideos++;
-        continue;
-      }
-
-      final videoId = video.id.value;
-
-      newPlayInfo.newDurationMusic!.addAll({
-        newPlayInfo.songList!.elementAt(newPlayInfo.currentSong!):
-            video.duration!
-      });
-
-      var manifest = await yt.videos.streamsClient.getManifest(videoId);
-      var audioUrl = manifest.audioOnly.last.url;
-
-      mapSongURL.addAll({newPlayInfo.currentSong!: AudioSource.uri(audioUrl)});
-      setState(() {});
-      break;
-    }
-  }
+  bool loading = false;
+  bool otherMusic = false;
 
   @override
   void initState() {
@@ -100,19 +27,25 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
     final spotify = sptf.SpotifyApi(credentials);
 
     spotify.playlists.get(widget.trackId).then((value) {
-      newPlayInfo.artistName = value.name!;
-      newPlayInfo.artistImage = value.images!.first.url!;
+      musicPlayer.artistName.add(value.name!);
+      musicPlayer.artistImage.add(value.images!.first.url!);
 
       value.tracks?.itemsNative?.forEach((value) {
-        newPlayInfo.songList!.add(value['track']['name']);
-        newPlayInfo.imageList!.add(value['track']['album']['images'][0]['url']);
-        descriptionList.add(value['track']['artists'][0]['name']);
+        musicPlayer.songList.add(value['track']['name']);
+        musicPlayer.imageList.add(value['track']['album']['images'][0]['url']);
+        musicPlayer.descriptionList.add(value['track']['artists'][0]['name']);
       });
 
       setState(() {});
     });
 
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    musicPlayer.player.dispose();
+    super.dispose();
   }
 
   @override
@@ -125,23 +58,26 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
-          newPlayInfo.artistName ?? '',
+          musicPlayer.artistName.elementAtOrNull(0) ?? '',
           style: TextStyle(color: Colors.white, fontSize: width * 0.055),
         ),
       ),
-      body: Container(
-        decoration: const BoxDecoration(color: Colors.black),
-        padding: const EdgeInsets.all(5),
-        width: double.infinity,
-        height: double.infinity,
-        child: Stack(
-          children: [
-            ListView.separated(
-              itemCount: newPlayInfo.songList!.length,
+      body: Stack(
+        children: [
+          const SizedBox(height: double.infinity),
+          Container(
+            decoration: const BoxDecoration(color: Colors.black),
+            padding: const EdgeInsets.all(5),
+            width: double.infinity,
+            height: musicPlayer.player.currentIndex != null
+                ? height * 0.769
+                : double.infinity,
+            child: ListView.separated(
+              itemCount: musicPlayer.songList.length,
               separatorBuilder: (BuildContext context, int index) =>
                   SizedBox(height: height * 0.01),
               itemBuilder: (BuildContext context, int index) {
-                return newPlayInfo.songList!.isNotEmpty
+                return musicPlayer.songList.isNotEmpty
                     ? Row(
                         children: [
                           Material(
@@ -157,7 +93,7 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                               width: width * 0.20,
                               height: height * 0.10,
                               child:
-                                  Image.network(newPlayInfo.imageList![index])),
+                                  Image.network(musicPlayer.imageList[index])),
                           SizedBox(width: width * 0.02),
                           Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -172,7 +108,7 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                                   color: Colors.transparent,
                                   child: Text(
                                     overflow: TextOverflow.ellipsis,
-                                    newPlayInfo.songList!.elementAt(index),
+                                    musicPlayer.songList.elementAt(index),
                                     style: const TextStyle(
                                         fontSize: 20, color: Colors.white),
                                   ),
@@ -188,7 +124,7 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                                   color: Colors.transparent,
                                   child: Text(
                                     overflow: TextOverflow.ellipsis,
-                                    descriptionList
+                                    musicPlayer.descriptionList
                                         .elementAt(index),
                                     style: const TextStyle(
                                         fontSize: 20, color: Colors.white),
@@ -202,38 +138,72 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                               shape: const CircleBorder(),
                             ),
                             onPressed: () async {
-                              if (newPlayInfo.currentSong != index) {
-                                newPlayInfo.currentSong = index;
-                                await playBottom(true);
-                              } else {
-                                if (newPlayInfo.currentSong != index) {
-                                  setState(() => newPlayInfo.otherMusic = true);
-                                }
-                                newPlayInfo.currentSong = index;
-                                await playBottom();
-                                setState(() => newPlayInfo.otherMusic = false);
+                              if (loading == true) {
+                                return;
                               }
-                              setState(() {});
+
+                              setState(() => loading = true);
+
+                              musicPlayer.songIndex = index;
+
+                              // caso o nome da música não esteja na lista mapSongURL
+                              // e seja diferente da que esta sendo tocada no momento
+                              if (!musicPlayer.mapSongURL.containsKey(
+                                  musicPlayer.songList.elementAt(index))) {
+                                // muda a música atual para a nova;
+                                musicPlayer.actualSong =
+                                    musicPlayer.songList.elementAt(index);
+                                // para a música que está tocando
+                                await musicPlayer.player.stop();
+                                // coloca salva o index dá música e procura e salva no mapSongURL
+                                // e a toca
+                                await musicPlayer.getUrlMusic(
+                                    musicPlayer.songList.elementAt(index),
+                                    musicPlayer.descriptionList
+                                        .elementAt(index));
+                              } else if (musicPlayer.songList
+                                      .elementAt(index) !=
+                                  musicPlayer.actualSong) {
+                                // muda a música atual para a nova;
+                                musicPlayer.actualSong =
+                                    musicPlayer.songList.elementAt(index);
+                                // caso a música esteja no mapSongURL e não é a que está tocando,
+                                // para a música que está tocando
+                                await musicPlayer.player.stop();
+                                // inicia a música nova
+                                await musicPlayer.setAudioSource(
+                                    musicPlayer.songList.elementAt(index));
+                              }
+
+                              musicPlayer.play();
+                              setState(() => loading = false);
                             },
                             child: Stack(
                               children: [
-                                if (newPlayInfo.loading == false ||
-                                    newPlayInfo.currentSong != index)
-                                  Icon(
-                                    (player.playing &&
-                                            newPlayInfo.currentSong == index)
-                                        ? Icons.pause_circle
-                                        : Icons.play_circle,
-                                    color: Colors.green,
-                                    size: (width + height) * 0.04,
-                                  ),
-                                if (newPlayInfo.loading == true &&
-                                    newPlayInfo.currentSong == index)
-                                  SizedBox(
-                                    width: ((width + height) * 0.03),
-                                    height: ((width + height) * 0.03),
-                                    child: const CircularProgressIndicator(
-                                        color: Colors.green),
+                                Icon(
+                                  (musicPlayer.player.playing &&
+                                          musicPlayer.songList
+                                                  .elementAt(index) ==
+                                              musicPlayer.actualSong)
+                                      ? Icons.pause_circle
+                                      : Icons.play_circle,
+                                  color: loading
+                                      ? Colors.transparent
+                                      : Colors.green,
+                                  size: (width + height) * 0.04,
+                                ),
+                                if (loading == true &&
+                                    musicPlayer.songList.elementAt(index) ==
+                                        musicPlayer.actualSong)
+                                  Positioned(
+                                    top: height * 0.008,
+                                    right: width * 0.015,
+                                    child: SizedBox(
+                                      width: ((width + height) * 0.03),
+                                      height: ((width + height) * 0.03),
+                                      child: const CircularProgressIndicator(
+                                          color: Colors.green),
+                                    ),
                                   ),
                               ],
                             ),
@@ -243,25 +213,24 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                     : const Placeholder(color: Colors.transparent);
               },
             ),
-            if (player.currentIndex != null)
-              Positioned(
-                bottom: 0,
-                child: WhatsPlaying(
-                  nameMusic:
-                      newPlayInfo.songList!.elementAt(newPlayInfo.currentSong!),
-                  imageMusic: newPlayInfo.imageList![newPlayInfo.currentSong!],
-                  descriptionMusic:
-                      descriptionList.elementAt(newPlayInfo.currentSong!),
-                  playBottom: playBottom,
-                  player: player,
-                  otherMusic: newPlayInfo.otherMusic!,
-                  duration: newPlayInfo.newDurationMusic![newPlayInfo.songList!
-                          .elementAt(newPlayInfo.currentSong!)] ??
-                      const Duration(seconds: 0),
-                ),
+          ),
+          if (musicPlayer.player.currentIndex != null)
+            Positioned(
+              bottom: 0,
+              child: WhatsPlaying(
+                nameMusic:
+                    musicPlayer.songList.elementAt(musicPlayer.songIndex),
+                imageMusic: musicPlayer.imageList[musicPlayer.songIndex],
+                descriptionMusic: musicPlayer.descriptionList
+                    .elementAt(musicPlayer.songIndex),
+                musicPlayer: musicPlayer,
+                loading: loading,
+                duration: musicPlayer.mapDuration[musicPlayer.songList
+                        .elementAt(musicPlayer.songIndex)] ??
+                    Duration.zero,
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
