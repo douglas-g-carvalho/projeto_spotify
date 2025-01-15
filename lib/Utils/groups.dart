@@ -1,69 +1,110 @@
 import 'package:flutter/material.dart';
+import 'package:projeto_spotify/Utils/constants.dart';
+import 'package:spotify/spotify.dart';
 
 class Groups extends ChangeNotifier {
-  // Eighty Music
-  final List<String> _listGroups = [
-    '6AsR0V6KWciPEVnZfIFKnX',
-    '2AltltuDppkFyGloecxjzs',
-    '6bpPKPIWEPnvLmqRc7GLzw',
-    '08eJerYHHTin58iXQjQHpK',
-    '5tEzEAdmKqsugZxOq9YajR',
-    '60egqvG5M5ilZM8Js4hCkG',
-    '7234K2ZNVmAfetWuSguT7V',
-    '0Mgok0vqQjNAsLV5WyJvAq',
-  ];
+  // rework total
+  List<String> list = [];
+  List<String> mixes = [];
 
-  final Map<int, Map<String, String>> _mapMusics = {};
+  List<Map<String, String>> listMap = [];
+  List<Map<String, String>> mixesMap = [];
 
-  List<String> getListGroup() {
-    return [..._listGroups];
+  final Map<int, Map<String, String>> _mapListMusics = {};
+  final Map<int, Map<String, String>> _mapMixesInfo = {};
+
+  List<String> get(String file) {
+    switch (file) {
+      case 'list':
+        return [...list];
+      case 'mixes':
+        return [...mixes];
+      case _:
+        return [];
+    }
   }
 
-  Map<int, Map<String, String>> getMapMusics() {
-    return {..._mapMusics};
+  Map<int, Map<String, String>> getMap(String file) {
+    switch (file) {
+      case 'list':
+        return {..._mapListMusics};
+      case 'mixes':
+        return {..._mapMixesInfo};
+      case _:
+        return {};
+    }
   }
 
-  void addMapMusics(int index, String key, String value) {
-    if (!_mapMusics.containsKey(index)) {
-      _mapMusics.addAll({
-        index: {key: value}
-      });
-    } else {
-      _mapMusics[index]!.addAll({key: value});
+  void addMap(String file, int index, String key, String value) {
+    switch (file) {
+      case 'list':
+        if (!_mapListMusics.containsKey(index)) {
+          _mapListMusics.addAll({
+            index: {key: value}
+          });
+        } else {
+          _mapListMusics[index]!.addAll({key: value});
+        }
+      case 'mixes':
+        if (!_mapMixesInfo.containsKey(index)) {
+          _mapMixesInfo.addAll({
+            index: {key: value}
+          });
+        } else {
+          _mapMixesInfo[index]!.addAll({key: value});
+        }
     }
 
     notifyListeners();
   }
 
-  void removeMapMusics(int index) {
-    _mapMusics.remove(index);
+  void removeMap(String file, int index) {
+    switch (file) {
+      case 'list':
+        _mapListMusics.remove(index);
+      case 'mixes':
+        _mapMixesInfo.remove(index);
+    }
+
     notifyListeners();
   }
 
-  // Mixes mais ouvidos
-  final List<String> _mixes = [
-    '6G4O7YRLjTk4T4VPa4fDAM',
-    '7w13RcdObCa0WvQrjVJDfp',
-    '5z2dTZUjDD90wM4Z9youwS',
-  ];
+  Future<void> loadMap(String file) async {
+    final credentials =
+        SpotifyApiCredentials(Constants.clientId, Constants.clientSecret);
+    final spotify = SpotifyApi(credentials);
 
-  final Map<int, Map<String, String>> _mapInfo = {};
+    List<String> id = [];
+    switch (file) {
+      case 'list':
+        id = list;
+      case 'mixes':
+        id = mixes;
+    }
 
-  List<String> getMixes() {
-    return [..._mixes];
-  }
-
-  Map<int, Map<String, String>> getMapInfo() {
-    return {..._mapInfo};
-  }
-
-  void addMapInfo(int index, String key, String value) {
-    if (!_mapInfo.containsKey(index)) {
-      _mapInfo.addAll({
-        index: {key: value}
+    for (int index = 0; index != id.length; index++) {
+      await spotify.playlists.get(id[index]).then((value) {
+        switch (file) {
+          case 'list':
+            try {
+              addMap('list', index, 'name', value.name!);
+              addMap('list', index, 'cover', value.images!.first.url!);
+              addMap('list', index, 'spotify', value.id!);
+            } catch (error) {
+              removeMap('list', index);
+              index -= 1;
+            }
+          case 'mixes':
+            try {
+              addMap('mixes', index, 'ID', value.id!);
+              addMap('mixes', index, 'Name', value.name!);
+              addMap('mixes', index, 'Image', value.images!.first.url!);
+            } catch (error) {
+              removeMap('mixes', index);
+              index -= 1;
+            }
+        }
       });
-    } else {
-      _mapInfo[index]!.addAll({key: value});
     }
     notifyListeners();
   }
