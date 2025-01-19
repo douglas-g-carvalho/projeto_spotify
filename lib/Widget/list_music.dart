@@ -18,8 +18,8 @@ class _ListMusicState extends State<ListMusic> {
   bool isLoading = true;
 
   ScrollController scrollController = ScrollController(
-    initialScrollOffset: 100,
-    keepScrollOffset: true,
+    initialScrollOffset: 0,
+    keepScrollOffset: false,
   );
 
   @override
@@ -43,7 +43,7 @@ class _ListMusicState extends State<ListMusic> {
     }
 
     return SizedBox(
-      height: height * 0.33,
+      height: height * 0.32,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -54,7 +54,6 @@ class _ListMusicState extends State<ListMusic> {
               height: height * 0.40,
               child: ListView.separated(
                 controller: scrollController,
-                physics: const NeverScrollableScrollPhysics(),
                 itemCount: (mapListMusics.length / 2).round(),
                 separatorBuilder: (_, int index) {
                   return const SizedBox(height: 5);
@@ -79,7 +78,6 @@ class _ListMusicState extends State<ListMusic> {
               height: height * 0.40,
               child: ListView.separated(
                 controller: scrollController,
-                physics: const NeverScrollableScrollPhysics(),
                 itemCount: (mapListMusics.length / 2).floor(),
                 separatorBuilder: (_, int index) {
                   return const SizedBox(height: 5);

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:spotify/spotify.dart' as sptf;
 
-import 'package:projeto_spotify/Widget/music_player.dart';
+import 'package:projeto_spotify/Utils/music_player.dart';
+import 'package:text_scroll/text_scroll.dart';
 import 'whats_playing.dart';
 
 import '../Utils/constants.dart';
@@ -20,6 +21,12 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
   bool loading = false;
   bool otherMusic = false;
 
+  bool isPlaying = false;
+
+  void loadingMaster(bool value) {
+    setState(() => loading = value);
+  }
+
   @override
   void initState() {
     final credentials =
@@ -27,13 +34,19 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
     final spotify = sptf.SpotifyApi(credentials);
 
     spotify.playlists.get(widget.trackId).then((value) {
-      musicPlayer.artistName.add(value.name!);
+      musicPlayer.playlistName.add(value.name!);
       musicPlayer.artistImage.add(value.images!.first.url!);
 
       value.tracks?.itemsNative?.forEach((value) {
+        List<String> saveArtistName = [];
+
         musicPlayer.songList.add(value['track']['name']);
         musicPlayer.imageList.add(value['track']['album']['images'][0]['url']);
-        musicPlayer.descriptionList.add(value['track']['artists'][0]['name']);
+
+        value['track']['artists'].forEach((artistas) {
+          saveArtistName.add(artistas['name']);
+        });
+        musicPlayer.artistName.addAll({value['track']['name']: saveArtistName});
       });
 
       setState(() {});
@@ -58,7 +71,7 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
-          musicPlayer.artistName.elementAtOrNull(0) ?? '',
+          musicPlayer.playlistName.elementAtOrNull(0) ?? '',
           style: TextStyle(color: Colors.white, fontSize: width * 0.055),
         ),
       ),
@@ -69,9 +82,7 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
             decoration: const BoxDecoration(color: Colors.black),
             padding: const EdgeInsets.all(5),
             width: double.infinity,
-            height: musicPlayer.player.currentIndex != null
-                ? height * 0.769
-                : double.infinity,
+            height: isPlaying ? height * 0.727 : double.infinity,
             child: ListView.separated(
               itemCount: musicPlayer.songList.length,
               separatorBuilder: (BuildContext context, int index) =>
@@ -104,13 +115,15 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                                     : index < 99
                                         ? width * 0.47
                                         : width * 0.45,
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: Text(
-                                    overflow: TextOverflow.ellipsis,
-                                    musicPlayer.songList.elementAt(index),
-                                    style: const TextStyle(
-                                        fontSize: 20, color: Colors.white),
+                                child: TextScroll(
+                                  '${musicPlayer.songList.elementAt(index)}   ',
+                                  velocity: const Velocity(
+                                      pixelsPerSecond: Offset(90, 0)),
+                                  intervalSpaces: 5,
+                                  pauseBetween: const Duration(seconds: 2),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: height * 0.025,
                                   ),
                                 ),
                               ),
@@ -120,14 +133,15 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                                     : index < 99
                                         ? width * 0.47
                                         : width * 0.45,
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: Text(
-                                    overflow: TextOverflow.ellipsis,
-                                    musicPlayer.descriptionList
-                                        .elementAt(index),
-                                    style: const TextStyle(
-                                        fontSize: 20, color: Colors.white),
+                                child: TextScroll(
+                                  '${musicPlayer.textArtists(musicPlayer.artistName[musicPlayer.songList.elementAt(index)]!)} ',
+                                  velocity: const Velocity(
+                                      pixelsPerSecond: Offset(90, 0)),
+                                  intervalSpaces: 5,
+                                  pauseBetween: const Duration(seconds: 2),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: height * 0.025,
                                   ),
                                 ),
                               ),
@@ -146,36 +160,38 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
 
                               musicPlayer.songIndex = index;
 
-                              // caso o nome da música não esteja na lista mapSongURL
-                              // e seja diferente da que esta sendo tocada no momento
-                              if (!musicPlayer.mapSongURL.containsKey(
-                                  musicPlayer.songList.elementAt(index))) {
-                                // muda a música atual para a nova;
-                                musicPlayer.actualSong =
-                                    musicPlayer.songList.elementAt(index);
-                                // para a música que está tocando
-                                await musicPlayer.player.stop();
-                                // coloca salva o index dá música e procura e salva no mapSongURL
-                                // e a toca
-                                await musicPlayer.getUrlMusic(
-                                    musicPlayer.songList.elementAt(index),
-                                    musicPlayer.descriptionList
-                                        .elementAt(index));
-                              } else if (musicPlayer.songList
-                                      .elementAt(index) !=
-                                  musicPlayer.actualSong) {
-                                // muda a música atual para a nova;
-                                musicPlayer.actualSong =
-                                    musicPlayer.songList.elementAt(index);
-                                // caso a música esteja no mapSongURL e não é a que está tocando,
-                                // para a música que está tocando
-                                await musicPlayer.player.stop();
-                                // inicia a música nova
-                                await musicPlayer.setAudioSource(
-                                    musicPlayer.songList.elementAt(index));
-                              }
+                              await musicPlayer.changeMusic();
+
+                              // // caso o nome da música não esteja na lista mapSongURL
+                              // // e seja diferente da que esta sendo tocada no momento
+                              // if (!musicPlayer.mapSongURL.containsKey(
+                              //     musicPlayer.songList.elementAt(index))) {
+                              //   // muda a música atual para a nova;
+                              //   musicPlayer.actualSong =
+                              //       musicPlayer.songList.elementAt(index);
+                              //   // para a música que está tocando
+                              //   await musicPlayer.player.stop();
+                              //   // coloca salva o index dá música e procura e salva no mapSongURL
+                              //   // e a toca
+                              //   await musicPlayer.getUrlMusic(
+                              //       musicPlayer.songList.elementAt(index),
+                              //       musicPlayer.artistName);
+                              // } else if (musicPlayer.songList
+                              //         .elementAt(index) !=
+                              //     musicPlayer.actualSong) {
+                              //   // muda a música atual para a nova;
+                              //   musicPlayer.actualSong =
+                              //       musicPlayer.songList.elementAt(index);
+                              //   // caso a música esteja no mapSongURL e não é a que está tocando,
+                              //   // para a música que está tocando
+                              //   await musicPlayer.player.stop();
+                              //   // inicia a música nova
+                              //   await musicPlayer.setAudioSource(
+                              //       musicPlayer.songList.elementAt(index));
+                              // }
 
                               musicPlayer.play();
+                              isPlaying = true;
                               setState(() => loading = false);
                             },
                             child: Stack(
@@ -214,20 +230,27 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
               },
             ),
           ),
-          if (musicPlayer.player.currentIndex != null)
+          if (isPlaying)
             Positioned(
               bottom: 0,
               child: WhatsPlaying(
                 nameMusic:
                     musicPlayer.songList.elementAt(musicPlayer.songIndex),
                 imageMusic: musicPlayer.imageList[musicPlayer.songIndex],
-                descriptionMusic: musicPlayer.descriptionList
-                    .elementAt(musicPlayer.songIndex),
+                artistName: musicPlayer.artistName[
+                    musicPlayer.songList.elementAt(musicPlayer.songIndex)]!,
                 musicPlayer: musicPlayer,
                 loading: loading,
+                loadingMaster: loadingMaster,
                 duration: musicPlayer.mapDuration[musicPlayer.songList
                         .elementAt(musicPlayer.songIndex)] ??
                     Duration.zero,
+                stopWidget: () {
+                  setState(() {
+                    isPlaying = false;
+                    musicPlayer.player.stop();
+                  });
+                },
               ),
             ),
         ],

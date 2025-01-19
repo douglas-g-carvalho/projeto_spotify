@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:projeto_spotify/Widget/music_player.dart';
+import 'package:projeto_spotify/Utils/music_player.dart';
 import 'package:text_scroll/text_scroll.dart';
 import 'package:just_audio/just_audio.dart';
 
@@ -30,6 +30,10 @@ class SearchPlay extends StatefulWidget {
 class _SearchPlayState extends State<SearchPlay> {
   MusicPlayer musicPlayer = MusicPlayer();
   bool loading = false;
+
+  loadingMaster(bool value) {
+    setState(() => loading = value);
+  }
 
   Duration stringToDuration(String durationString) {
     switch (durationString.length) {
@@ -68,6 +72,12 @@ class _SearchPlayState extends State<SearchPlay> {
     final size = MediaQuery.of(context).size;
     final width = size.width;
     final height = size.height;
+
+    if (musicPlayer.mapDuration.isEmpty) {
+      musicPlayer.songList.addAll({widget.title});
+      musicPlayer.mapDuration
+          .addAll({widget.title: stringToDuration(widget.duration)});
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -126,8 +136,10 @@ class _SearchPlayState extends State<SearchPlay> {
             ),
             SizedBox(height: height * 0.01),
             // mudar o progress bar para o musicPlayer;
-            musicPlayer.progressBar(width * 0.80, stringToDuration(widget.duration)),
-
+            musicPlayer.progressBar(
+              width * 0.80,
+              loadingMaster,
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -148,6 +160,11 @@ class _SearchPlayState extends State<SearchPlay> {
                       await musicPlayer.player.setAudioSource(widget.urlSound);
                     }
 
+                    if (musicPlayer.musicaCompletada()) {
+                      musicPlayer.player.seek(Duration.zero);
+                      setState(() => musicPlayer.musica = Duration.zero);
+                    }
+
                     if (!musicPlayer.player.playing) {
                       musicPlayer.player.play();
                     } else {
@@ -164,29 +181,30 @@ class _SearchPlayState extends State<SearchPlay> {
                         size: width * 0.38,
                         color: loading ? Colors.transparent : Colors.green,
                       ),
-                      Positioned(
-                        top: width * 0.04,
-                        right: width * 0.04,
-                        child: SizedBox(
-                          width: width * 0.3,
-                          height: height * 0.15,
-                          child: const CircularProgressIndicator(
-                            color: Colors.green,
+                      if (loading)
+                        Positioned(
+                          top: width * 0.04,
+                          right: width * 0.04,
+                          child: SizedBox(
+                            width: width * 0.30,
+                            height: height * 0.14,
+                            child: const CircularProgressIndicator(
+                              color: Colors.green,
+                            ),
                           ),
-                        ),
-                      )
+                        )
                     ],
                   ),
                 ),
                 TextButton(
                   onPressed: () {
-                    musicPlayer.loop = !musicPlayer.loop;
+                    musicPlayer.repeat = !musicPlayer.repeat;
                     setState(() {});
                   },
                   child: Icon(
                     Icons.loop,
                     size: width * 0.12,
-                    color: musicPlayer.loop ? Colors.green : Colors.white,
+                    color: musicPlayer.repeat ? Colors.green : Colors.white,
                   ),
                 ),
               ],

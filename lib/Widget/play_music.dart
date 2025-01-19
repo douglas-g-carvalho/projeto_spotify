@@ -1,8 +1,10 @@
+// import 'dart:math';
+
 import 'package:flutter/material.dart';
-import 'package:projeto_spotify/Widget/music_player.dart';
+import 'package:projeto_spotify/Utils/music_player.dart';
 import 'package:spotify/spotify.dart' as sptf;
 
-import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
+// import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 
 import '../Utils/constants.dart';
 
@@ -19,7 +21,15 @@ class _PlayMusicState extends State<PlayMusic> {
 
   bool allLoad = false;
   bool loading = false;
-  Duration musica = const Duration(seconds: 0);
+
+  // bool repeat = false;
+  // bool shuffle = false;
+
+  // Duration musica = const Duration(seconds: 0);
+
+  void loadingMaster(bool value) {
+    setState(() => loading = value);
+  }
 
   @override
   void initState() {
@@ -28,15 +38,19 @@ class _PlayMusicState extends State<PlayMusic> {
     final spotify = sptf.SpotifyApi(credentials);
 
     spotify.playlists.get(widget.trackId).then((value) {
-      musicPlayer.artistName.add(value.name!);
+      musicPlayer.playlistName.add(value.name!);
       musicPlayer.artistImage.add(value.images!.first.url!);
 
       value.tracks?.itemsNative?.forEach((value) {
-        if (musicPlayer.songList.length <= 10) {
-          musicPlayer.songList.add(value['track']['name']);
-          musicPlayer.imageList
-              .add(value['track']['album']['images'][0]['url']);
-        }
+        List<String> saveArtistName = [];
+
+        musicPlayer.songList.add(value['track']['name']);
+        musicPlayer.imageList.add(value['track']['album']['images'][0]['url']);
+        value['track']['artists'].forEach((artistas) {
+          saveArtistName.add(artistas['name']);
+        });
+        musicPlayer.artistName.addAll({value['track']['name']: saveArtistName});
+
         setState(() {});
       });
     }).then((value) => setState(() => allLoad = true));
@@ -74,7 +88,7 @@ class _PlayMusicState extends State<PlayMusic> {
             SizedBox(width: width * 0.01),
             Expanded(
               child: Text(
-                musicPlayer.artistName.elementAtOrNull(0) ?? '',
+                musicPlayer.playlistName.elementAtOrNull(0) ?? '',
                 style: TextStyle(color: Colors.white, fontSize: width * 0.065),
               ),
             ),
@@ -108,123 +122,137 @@ class _PlayMusicState extends State<PlayMusic> {
                       fontSize: width * 0.07,
                     ),
                   ),
-                  SizedBox(
-                    width: size.width * 0.80,
-                    child: StreamBuilder(
-                      stream: musicPlayer.player.positionStream,
-                      builder: (context, data) {
-                        musica = data.data ?? Duration.zero;
-                        return ProgressBar(
-                          progress: musica,
-                          total: musicPlayer.mapDuration[musicPlayer.songList
-                                  .elementAt(musicPlayer.songIndex)] ??
-                              Duration.zero,
-                          buffered: musicPlayer.player.bufferedPosition,
-                          bufferedBarColor: Colors.grey,
-                          baseBarColor: Colors.white,
-                          thumbColor: Colors.green,
-                          thumbRadius: 7,
-                          timeLabelTextStyle:
-                              const TextStyle(color: Colors.white),
-                          progressBarColor: Colors.green[900],
-                          onSeek: (duration) async {
-                            await musicPlayer.player.seek(duration);
-                          },
-                        );
-                      },
-                    ),
+                  musicPlayer.progressBar(
+                    width * 0.80,
+                    loadingMaster,
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Column(
                     children: [
-                      TextButton(
-                        onPressed: () async {
-                          if (musicPlayer.songIndex != 0) {
-                            setState(() => loading = true);
-                            await musicPlayer.passMusic('Left');
-                            setState(() => loading = false);
-                          }
-                        },
-                        child: Icon(
-                          musicPlayer.songIndex != 0
-                              ? Icons.arrow_circle_left_outlined
-                              : Icons.arrow_circle_left,
-                          size: width * 0.14,
-                          color: musicPlayer.songIndex != 0
-                              ? Colors.white
-                              : Colors.red,
-                        ),
-                      ),
-                      Stack(
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           TextButton(
                             onPressed: () async {
-                              setState(() => loading = true);
-
-                              // checa se a música existe no mapSongURL
-                              if (!musicPlayer.mapSongURL.containsKey(
-                                  musicPlayer.songList
-                                      .elementAt(musicPlayer.songIndex))) {
-                                await musicPlayer.getUrlMusic(
-                                    musicPlayer.songList
-                                        .elementAt(musicPlayer.songIndex),
-                                    musicPlayer.artistName.elementAt(0));
-                                // checa se a música sendo tocada é a nova;
-                              } else if (musicPlayer.actualSong !=
-                                  musicPlayer.songList
-                                      .elementAt(musicPlayer.songIndex)) {
-                                await musicPlayer.setAudioSource(musicPlayer
-                                    .songList
-                                    .elementAt(musicPlayer.songIndex));
+                              if (musicPlayer.songIndex != 0) {
+                                setState(() => loading = true);
+                                await musicPlayer.passMusic('Left');
+                                setState(() {
+                                  musicPlayer.player.seek(Duration.zero);
+                                  loading = false;
+                                });
                               }
-
-                              await musicPlayer.play();
-                              setState(() => loading = false);
                             },
                             child: Icon(
-                              musicPlayer.player.playing
-                                  ? Icons.pause_circle
-                                  : Icons.play_circle,
-                              size: (size.width + size.height) * 0.08,
-                              color:
-                                  loading ? Colors.transparent : Colors.white,
+                              musicPlayer.songIndex != 0
+                                  ? Icons.arrow_circle_left_outlined
+                                  : Icons.arrow_circle_left,
+                              size: width * 0.14,
+                              color: musicPlayer.songIndex != 0
+                                  ? Colors.white
+                                  : Colors.red,
                             ),
                           ),
-                          if (loading)
-                            Positioned(
-                              right: size.width * 0.05,
-                              bottom: size.height * 0.021,
-                              child: SizedBox(
-                                width: (size.width + size.height) * 0.065,
-                                height: (size.width + size.height) * 0.065,
-                                child: const CircularProgressIndicator(
-                                  color: Colors.green,
+                          Stack(
+                            children: [
+                              TextButton(
+                                onPressed: () async {
+                                  setState(() => loading = true);
+
+                                  await musicPlayer.changeMusic();
+
+                                  if (musicPlayer.musicaCompletada()) {
+                                    musicPlayer.player.seek(Duration.zero);
+                                  }
+                                  setState(
+                                      () => musicPlayer.musica = Duration.zero);
+
+                                  await musicPlayer.play().then((value) {
+                                    setState(() => loading = false);
+                                  });
+                                },
+                                child: Icon(
+                                  musicPlayer.player.playing
+                                      ? Icons.pause_circle
+                                      : Icons.play_circle,
+                                  size: (size.width + size.height) * 0.08,
+                                  color: loading
+                                      ? Colors.transparent
+                                      : Colors.white,
                                 ),
                               ),
+                              if (loading)
+                                Positioned(
+                                  right: size.width * 0.05,
+                                  bottom: size.height * 0.021,
+                                  child: SizedBox(
+                                    width: (size.width + size.height) * 0.065,
+                                    height: (size.width + size.height) * 0.065,
+                                    child: const CircularProgressIndicator(
+                                      color: Colors.green,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              if (musicPlayer.songIndex !=
+                                  musicPlayer.songList.length - 1) {
+                                setState(() => loading = true);
+                                await musicPlayer.passMusic('Right');
+                                setState(() {
+                                  musicPlayer.player.seek(Duration.zero);
+                                  loading = false;
+                                });
+                              }
+                            },
+                            child: Icon(
+                              musicPlayer.songIndex !=
+                                      musicPlayer.songList.length - 1
+                                  ? Icons.arrow_circle_right_outlined
+                                  : Icons.arrow_circle_right,
+                              size: width * 0.14,
+                              color: musicPlayer.songIndex !=
+                                      musicPlayer.songList.length - 1
+                                  ? Colors.white
+                                  : Colors.red,
                             ),
+                          ),
                         ],
                       ),
-                      TextButton(
-                        onPressed: () async {
-                          if (musicPlayer.songIndex !=
-                              musicPlayer.songList.length - 1) {
-                            setState(() => loading = true);
-                            await musicPlayer.passMusic('Right');
-                            setState(() => loading = false);
-                          }
-                        },
-                        child: Icon(
-                          musicPlayer.songIndex !=
-                                  musicPlayer.songList.length - 1
-                              ? Icons.arrow_circle_right_outlined
-                              : Icons.arrow_circle_right,
-                          size: width * 0.14,
-                          color: musicPlayer.songIndex !=
-                                  musicPlayer.songList.length - 1
-                              ? Colors.white
-                              : Colors.red,
-                        ),
-                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              setState(() =>
+                                  musicPlayer.repeat = !musicPlayer.repeat);
+                            },
+                            child: Icon(
+                              musicPlayer.repeat
+                                  ? Icons.repeat_one
+                                  : Icons.repeat,
+                              size: width * 0.11,
+                              color: musicPlayer.repeat
+                                  ? Colors.green
+                                  : Colors.white,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              setState(() =>
+                                  musicPlayer.shuffle = !musicPlayer.shuffle);
+                            },
+                            child: Icon(
+                              Icons.shuffle,
+                              size: width * 0.11,
+                              color: musicPlayer.shuffle
+                                  ? Colors.green
+                                  : Colors.white,
+                            ),
+                          ),
+                        ],
+                      )
                     ],
                   ),
                 ],

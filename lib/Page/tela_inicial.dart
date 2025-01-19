@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:projeto_spotify/Widget/load_screen.dart';
 
 import 'package:projeto_spotify/Widget/mixes_mais_ouvidos.dart';
 import 'package:projeto_spotify/Widget/trocar_playlist.dart';
@@ -16,6 +17,20 @@ class TelaInicial extends StatefulWidget {
 }
 
 class _TelaInicialState extends State<TelaInicial> {
+  List<String> backupList = [];
+  List<String> backupMixes = [];
+
+  Future<void> updateMap(String file) async {
+    LoadScreen().loadingScreen(context);
+    await widget.group.loadMap(file);
+    stopLoad();
+    setState(() {});
+  }
+
+  void stopLoad() {
+    Navigator.of(context).pop();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -29,12 +44,14 @@ class _TelaInicialState extends State<TelaInicial> {
           ControleArquivo().readCounter('list').then((value) {
             setState(() {
               widget.group.list = value;
+              backupList = value;
             });
           });
         });
       } else {
         setState(() {
           widget.group.list = value;
+          backupList = value;
         });
       }
     });
@@ -48,12 +65,14 @@ class _TelaInicialState extends State<TelaInicial> {
           ControleArquivo().readCounter('mixes').then((value) {
             setState(() {
               widget.group.mixes = value;
+              backupMixes = value;
             });
           });
         });
       } else {
         setState(() {
           widget.group.mixes = value;
+          backupMixes = value;
         });
       }
     });
@@ -72,10 +91,22 @@ class _TelaInicialState extends State<TelaInicial> {
         ),
         leading: TextButton(
           onPressed: () {
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (context) => TrocarPlaylist(
-                      group: widget.group,
-                    )));
+            Navigator.of(context)
+                .push(MaterialPageRoute(
+                    builder: (context) => TrocarPlaylist(
+                          group: widget.group,
+                        )))
+                .then((value) {
+              if (widget.group.get('list').length != backupList.length) {
+                updateMap('list');
+                backupList = widget.group.get('list');
+              }
+
+              if (widget.group.get('mixes').length != backupMixes.length) {
+                updateMap('mixes');
+                backupMixes = widget.group.get('mixes');
+              }
+            });
           },
           child: const Icon(
             Icons.add,

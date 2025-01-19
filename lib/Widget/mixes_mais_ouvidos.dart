@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:projeto_spotify/Widget/playlist_style.dart';
+import 'package:text_scroll/text_scroll.dart';
 
 import '../Utils/groups.dart';
 
@@ -36,11 +37,11 @@ class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
     }
 
     return isLoading
-        ?  SizedBox(
-                height: height * 0.30,
-                child: const Center(
-                  child: CircularProgressIndicator(color: Colors.green),
-                ))
+        ? SizedBox(
+            height: height * 0.30,
+            child: const Center(
+              child: CircularProgressIndicator(color: Colors.green),
+            ))
         : Column(
             children: [
               Text(
@@ -79,10 +80,11 @@ class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
                                   left: height * 0.01,
                                   child: SizedBox(
                                     width: width * 0.4,
-                                    child: Text(
-                                      overflow: TextOverflow.clip,
-                                      textAlign: TextAlign.center,
+                                    child: TextScroll(
                                       mapMixesInfo[index]!['Name']!,
+                                      velocity: const Velocity(
+                                          pixelsPerSecond: Offset(45, 0)),
+                                      intervalSpaces: 10,
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: height * 0.025,

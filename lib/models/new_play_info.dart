@@ -1,10 +1,9 @@
 class NewPlayInfo {
   String? trackId;
-  String? artistName;
+  String? playlistName;
   String? artistImage;
   String? songName;
   String? songImage;
-  String? description;
 
   int? totalSongs;
   int? currentSong;
@@ -22,11 +21,10 @@ class NewPlayInfo {
 
   NewPlayInfo({
     this.trackId,
-    this.artistName,
+    this.playlistName,
     this.artistImage,
     this.songName,
     this.songImage,
-    this.description,
     this.totalSongs,
     this.currentSong,
     this.imageList,
