@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:projeto_spotify/Utils/music_player.dart';
-import 'package:text_scroll/text_scroll.dart';
 import 'package:just_audio/just_audio.dart';
 
 class SearchPlay extends StatefulWidget {
@@ -97,10 +96,9 @@ class _SearchPlayState extends State<SearchPlay> {
               size: width * 0.50,
               color: Colors.white,
             ),
-            TextScroll(
+            Text(
               widget.title,
-              velocity: const Velocity(pixelsPerSecond: Offset(45, 0)),
-              intervalSpaces: 10,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: Colors.white,
                 fontSize: width * 0.05,
@@ -135,7 +133,6 @@ class _SearchPlayState extends State<SearchPlay> {
               ],
             ),
             SizedBox(height: height * 0.01),
-            // mudar o progress bar para o musicPlayer;
             musicPlayer.progressBar(
               width * 0.80,
               loadingMaster,

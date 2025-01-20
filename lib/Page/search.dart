@@ -4,6 +4,8 @@ import 'package:projeto_spotify/Models/search_model.dart';
 import 'package:projeto_spotify/Widget/search_play.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
+import '../Utils/load_screen.dart';
+
 class Search extends StatefulWidget {
   const Search({super.key});
 
@@ -387,18 +389,7 @@ class _SearchState extends State<Search> {
                     ),
                   ),
                 if (loading)
-                  Column(
-                    children: [
-                      SizedBox(height: height * 0.41),
-                      SizedBox(
-                        width: width * 0.12,
-                        height: height * 0.06,
-                        child: const CircularProgressIndicator(
-                          color: Colors.green,
-                        ),
-                      ),
-                    ],
-                  ),
+                  LoadScreen().loadingNormal(size)
               ],
             ),
           ),

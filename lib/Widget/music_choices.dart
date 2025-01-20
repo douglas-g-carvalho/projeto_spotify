@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:projeto_spotify/Widget/play_music.dart';
 
+import '../Utils/image_loader.dart';
+
 class MusicChoices extends StatelessWidget {
   final String texto;
   final String icon;
@@ -35,7 +37,7 @@ class MusicChoices extends StatelessWidget {
                 children: [
                   ClipRRect(
                       borderRadius: BorderRadius.circular(2),
-                      child: Image.network(icon)),
+                      child: ImageLoader().imageNetwork(urlImage: icon, size: width*0.165)),
                   Expanded(
                     child: Container(
                       padding: const EdgeInsets.all(8),

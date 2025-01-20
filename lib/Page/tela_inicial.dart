@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:projeto_spotify/Widget/load_screen.dart';
+import 'package:projeto_spotify/Utils/load_screen.dart';
 
 import 'package:projeto_spotify/Widget/mixes_mais_ouvidos.dart';
-import 'package:projeto_spotify/Widget/trocar_playlist.dart';
+import 'package:projeto_spotify/Page/trocar_playlist.dart';
 
 import '../Utils/controle_arquivo.dart';
 import '../Utils/groups.dart';
@@ -10,7 +10,11 @@ import '../Widget/list_music.dart';
 
 class TelaInicial extends StatefulWidget {
   final Groups group;
-  const TelaInicial({required this.group, super.key});
+
+  const TelaInicial({
+    required this.group,
+    super.key,
+  });
 
   @override
   State<TelaInicial> createState() => _TelaInicialState();
@@ -20,15 +24,25 @@ class _TelaInicialState extends State<TelaInicial> {
   List<String> backupList = [];
   List<String> backupMixes = [];
 
+  Set<Map<String, String>> mapListMusics = {};
+  Set<Map<String, String>> mapMixesInfo = {};
+
+  Set<String> isLoading = {};
+
   Future<void> updateMap(String file) async {
     LoadScreen().loadingScreen(context);
-    await widget.group.loadMap(file);
-    stopLoad();
-    setState(() {});
-  }
 
-  void stopLoad() {
-    Navigator.of(context).pop();
+    await widget.group.loadMap(file).then((value) {
+      switch (file) {
+        case 'list':
+          mapListMusics = widget.group.listMap;
+        case 'mixes':
+          mapMixesInfo = widget.group.mixesMap;
+      }
+      setState(() {});
+      // ignore: use_build_context_synchronously
+      Navigator.of(context).pop();
+    });
   }
 
   @override
@@ -54,6 +68,24 @@ class _TelaInicialState extends State<TelaInicial> {
           backupList = value;
         });
       }
+    }).then((value) {
+      if (widget.group.listMap.isNotEmpty) {
+        mapListMusics = widget.group.listMap;
+        if (mapListMusics.isNotEmpty) {
+          isLoading.add('List');
+          setState(() {});
+        }
+      }
+
+      if (mapListMusics.isEmpty) {
+        widget.group.loadMap('list').then((value) {
+          mapListMusics = widget.group.listMap;
+          if (mapListMusics.isNotEmpty) {
+            isLoading.add('List');
+            setState(() {});
+          }
+        });
+      }
     });
 
     ControleArquivo().readCounter('mixes').then((value) {
@@ -73,6 +105,24 @@ class _TelaInicialState extends State<TelaInicial> {
         setState(() {
           widget.group.mixes = value;
           backupMixes = value;
+        });
+      }
+    }).then((value) {
+      if (widget.group.mixesMap.isNotEmpty) {
+        mapMixesInfo = widget.group.mixesMap;
+        if (mapMixesInfo.isNotEmpty) {
+          isLoading.add('Mixes');
+          setState(() {});
+        }
+      }
+
+      if (mapMixesInfo.isEmpty) {
+        widget.group.loadMap('mixes').then((value) {
+          mapMixesInfo = widget.group.mixesMap;
+          if (mapMixesInfo.isNotEmpty) {
+            isLoading.add('Mixes');
+            setState(() {});
+          }
         });
       }
     });
@@ -137,18 +187,26 @@ class _TelaInicialState extends State<TelaInicial> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          child: Column(
-            children: [
-              SizedBox(height: size.height * 0.01),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  ListMusic(group: widget.group),
-                  MixesMaisOuvidos(group: widget.group),
-                ],
-              ),
-            ],
-          ),
+          child: isLoading.length != 2
+              ? LoadScreen().loadingNormal(size)
+              : Column(
+                  children: [
+                    SizedBox(height: size.height * 0.01),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        ListMusic(
+                          mapListMusics: mapListMusics,
+                          group: widget.group,
+                        ),
+                        MixesMaisOuvidos(
+                          group: widget.group,
+                          mapMixesInfo: mapMixesInfo,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
         ),
       ),
     );

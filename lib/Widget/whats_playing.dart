@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:projeto_spotify/Utils/music_player.dart';
-import 'package:text_scroll/text_scroll.dart';
+
+import '../Utils/music_player.dart';
+import '../Utils/image_loader.dart';
 
 class WhatsPlaying extends StatefulWidget {
   final String nameMusic;
@@ -43,11 +44,13 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
         ),
       ),
       height: height * 0.19,
+      width: width,
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 TextButton(
                   onPressed: () {
@@ -89,10 +92,8 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                Image.network(
-                  widget.imageMusic,
-                  width: width * 0.25,
-                ),
+                ImageLoader().imageNetwork(
+                    urlImage: widget.imageMusic, size: width * 0.25),
                 Padding(
                   padding: const EdgeInsets.all(5),
                   child: Column(
@@ -100,11 +101,10 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                     children: [
                       SizedBox(
                         width: width * 0.5,
-                        child: TextScroll(
-                          '${widget.nameMusic}      ',
+                        child: Text(
+                          widget.nameMusic,
                           textAlign: TextAlign.center,
-                          velocity:
-                              const Velocity(pixelsPerSecond: Offset(60, 0)),
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: height * 0.023,
@@ -132,8 +132,8 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                   onPressed: () {
                     if (widget.musicPlayer.musicaCompletada()) {
                       widget.musicPlayer.player.seek(Duration.zero);
+                      setState(() => widget.musicPlayer.musica = Duration.zero);
                     }
-                    setState(() => widget.musicPlayer.musica = Duration.zero);
 
                     widget.loadingMaster(true);
 
@@ -145,8 +145,8 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                     children: [
                       widget.loading
                           ? SizedBox(
-                              width: ((width + height) * 0.04),
-                              height: ((width + height) * 0.04),
+                              width: ((width + height) * 0.035),
+                              height: ((width + height) * 0.035),
                               child: const CircularProgressIndicator(
                                   color: Colors.green))
                           : Icon(

@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:projeto_spotify/Utils/controle_arquivo.dart';
 
@@ -5,7 +7,7 @@ import 'package:spotify/spotify.dart';
 import 'package:projeto_spotify/Utils/constants.dart';
 
 import '../Utils/groups.dart';
-import 'load_screen.dart';
+import '../Utils/load_screen.dart';
 
 class TrocarPlaylist extends StatefulWidget {
   final Groups group;
@@ -20,10 +22,10 @@ class TrocarPlaylist extends StatefulWidget {
 }
 
 class _TrocarPlaylistState extends State<TrocarPlaylist> {
-  Future<List<Map<String, String>>> getNameFromSpotify(
-      List<String> listID, List<Map<String, String>> newList) async {
+  Future<Set<Map<String, String>>> getNameFromSpotify(
+      List<String> listID, Set<Map<String, String>> newList) async {
     if (listID.isEmpty) {
-      return [];
+      return {};
     }
 
     final credentials =
@@ -33,9 +35,13 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
     for (int index = 0; index != listID.length; index++) {
       await spotify.playlists.get(listID[index]).then((value) {
         try {
-          newList.add({listID[index]: value.name!});
+          newList.add({
+            'name': value.name!,
+            'cover': value.images!.first.url!,
+            'spotify': value.id!
+          });
         } catch (error) {
-          newList.remove(newList[index]);
+          newList.remove(newList.elementAt(index));
           index -= 1;
         }
       });
@@ -49,12 +55,8 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
   late TextEditingController controller;
   String textSearch = '';
 
-  void backScreen() {
-    Navigator.of(context).pop();
-  }
-
-  Widget rowText(String file, Size size, String text, int index) {
-    List<Map<String, String>> name = [];
+  Widget rowText(String file, Size size, int index) {
+    Set<Map<String, String>> name = {};
 
     switch (file) {
       case 'list':
@@ -69,28 +71,49 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
         SizedBox(
           width: size.width * 0.60,
           child: Text(
-            name[index][text] ?? '',
+            name.elementAt(index)['name'] ?? '',
             style: TextStyle(color: Colors.white, fontSize: size.width * 0.05),
             overflow: TextOverflow.ellipsis,
           ),
         ),
         TextButton(
           onPressed: () async {
-            await storage.update(file, text);
+            LoadScreen().loadingScreen(context);
+
+            Set<Map<String, String>> removeMap = {};
+
+            switch (file) {
+              case 'list':
+                removeMap = widget.group.listMap;
+
+              case 'mixes':
+                removeMap = widget.group.mixesMap;
+            }
+
+            await storage.update(file, removeMap.elementAt(index)['spotify']!);
 
             await storage.readCounter(file).then((value) {
-              setState(() {
-                switch (file) {
-                  case 'list':
-                    widget.group.list = value;
+              switch (file) {
+                case 'list':
+                  widget.group.list = value;
 
-                  case 'mixes':
-                    widget.group.mixes = value;
-                }
+                case 'mixes':
+                  widget.group.mixes = value;
+              }
+            }).then((value) {
+              switch (file) {
+                case 'list':
+                  widget.group.listMap
+                      .remove(widget.group.listMap.elementAt(index));
 
-                name.remove(name[index]);
-                widget.group.removeMap(file, index);
-              });
+                case 'mixes':
+                  widget.group.mixesMap
+                      .remove(widget.group.mixesMap.elementAt(index));
+              }
+
+              setState(() {});
+
+              Navigator.of(context).pop();
             });
           },
           child: const Icon(
@@ -155,7 +178,7 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                         }
                       });
 
-                      await getNameFromSpotify(widget.group.get(file), [])
+                      await getNameFromSpotify(widget.group.get(file), {})
                           .then((value) {
                         switch (file) {
                           case 'list':
@@ -167,11 +190,11 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                         setState(() {});
                       });
 
-                      backScreen();
+                      Navigator.of(context).pop();
                     } catch (error) {
                       // caso não encontre a playlist volta para o textField.
                     }
-                    backScreen();
+                    Navigator.of(context).pop();
                   }
                 },
               ),
@@ -195,23 +218,6 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-
-    if (widget.group.list.isNotEmpty && widget.group.listMap.isEmpty) {
-      getNameFromSpotify(widget.group.list, widget.group.listMap).then((value) {
-        setState(() {
-          widget.group.listMap = value;
-        });
-      });
-    }
-
-    if (widget.group.mixes.isNotEmpty && widget.group.mixesMap.isEmpty) {
-      getNameFromSpotify(widget.group.mixes, widget.group.mixesMap)
-          .then((value) {
-        setState(() {
-          widget.group.mixesMap = value;
-        });
-      });
-    }
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -249,24 +255,27 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                               TextButton(
                                 onPressed: () {
                                   LoadScreen().loadingScreen(context);
+
                                   storage.delete('list').then((value) {
                                     storage
-                                        .writeCounter('list',
-                                            '6AsR0V6KWciPEVnZfIFKnX-/-2AltltuDppkFyGloecxjzs-/-6bpPKPIWEPnvLmqRc7GLzw-/-08eJerYHHTin58iXQjQHpK-/-5tEzEAdmKqsugZxOq9YajR-/-60egqvG5M5ilZM8Js4hCkG-/-7234K2ZNVmAfetWuSguT7V-/-0Mgok0vqQjNAsLV5WyJvAq')
+                                        .writeCounter(
+                                      'list',
+                                      '6AsR0V6KWciPEVnZfIFKnX-/-2AltltuDppkFyGloecxjzs-/-6bpPKPIWEPnvLmqRc7GLzw-/-08eJerYHHTin58iXQjQHpK-/-5tEzEAdmKqsugZxOq9YajR-/-60egqvG5M5ilZM8Js4hCkG-/-7234K2ZNVmAfetWuSguT7V-/-0Mgok0vqQjNAsLV5WyJvAq',
+                                    )
                                         .then((value) {
                                       storage.readCounter('list').then((value) {
                                         widget.group.list = value;
-                                        widget.group.listMap = [];
+                                        widget.group.listMap = {};
 
-                                        getNameFromSpotify(widget.group.list,
-                                                widget.group.listMap)
-                                            .then((value) {
-                                          setState(() {
-                                            widget.group.listMap = value;
-                                            backScreen();
+                                        getNameFromSpotify(
+                                          widget.group.list,
+                                          widget.group.listMap,
+                                        ).then((value) {
+                                          setState(() =>
+                                              widget.group.listMap = value);
 
-                                            backScreen();
-                                          });
+                                          Navigator.of(context).pop();
+                                          Navigator.of(context).pop();
                                         });
                                       });
                                     });
@@ -280,24 +289,29 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                               TextButton(
                                 onPressed: () {
                                   LoadScreen().loadingScreen(context);
+
                                   storage.delete('mixes').then((value) {
                                     storage
-                                        .writeCounter('mixes',
-                                            '6G4O7YRLjTk4T4VPa4fDAM-/-7w13RcdObCa0WvQrjVJDfp-/-5z2dTZUjDD90wM4Z9youwS')
+                                        .writeCounter(
+                                      'mixes',
+                                      '6G4O7YRLjTk4T4VPa4fDAM-/-7w13RcdObCa0WvQrjVJDfp-/-5z2dTZUjDD90wM4Z9youwS',
+                                    )
                                         .then((value) {
                                       storage
                                           .readCounter('mixes')
                                           .then((value) {
                                         widget.group.mixes = value;
-                                        widget.group.mixesMap = [];
-                                        getNameFromSpotify(widget.group.mixes,
-                                                widget.group.mixesMap)
-                                            .then((value) {
-                                          setState(() {
-                                            widget.group.mixesMap = value;
-                                            backScreen();
-                                            backScreen();
-                                          });
+                                        widget.group.mixesMap = {};
+
+                                        getNameFromSpotify(
+                                          widget.group.mixes,
+                                          widget.group.mixesMap,
+                                        ).then((value) {
+                                          setState(() =>
+                                              widget.group.mixesMap = value);
+
+                                          Navigator.of(context).pop();
+                                          Navigator.of(context).pop();
                                         });
                                       });
                                     });
@@ -324,7 +338,7 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
         backgroundColor: Colors.black,
       ),
       body: widget.group.listMap.isEmpty && widget.group.mixesMap.isEmpty
-          ? const Center(child: CircularProgressIndicator())
+          ? LoadScreen().loadingNormal(size)
           : SingleChildScrollView(
               child: Column(children: [
                 Center(
@@ -345,7 +359,7 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                       ),
                       TextButton(
                         onPressed: () {
-                          // fazer o input aparecer e verificar se existe o link
+                          // faz o input aparecer e verificar se existe o link
                           add(size, 'list');
                         },
                         style: ElevatedButton.styleFrom(
@@ -368,8 +382,7 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                       child: ListView.builder(
                           itemCount: widget.group.listMap.length,
                           itemBuilder: (ctx, index) {
-                            return rowText(
-                                'list', size, widget.group.list[index], index);
+                            return rowText('list', size, index);
                           }),
                     ),
                   ),
@@ -393,7 +406,7 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                       ),
                       TextButton(
                         onPressed: () {
-                          // fazer o input aparecer e verificar se existe o link
+                          // faz o input aparecer e verificar se existe o link
                           add(size, 'mixes');
                         },
                         style: ElevatedButton.styleFrom(
@@ -416,8 +429,7 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                         child: ListView.builder(
                             itemCount: widget.group.mixesMap.length,
                             itemBuilder: (ctx, index) {
-                              return rowText('mixes', size,
-                                  widget.group.mixes[index], index);
+                              return rowText('mixes', size, index);
                             })),
                   ),
                 ),

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:projeto_spotify/Utils/groups.dart';
 import 'package:provider/provider.dart';
-
-import 'package:projeto_spotify/Utils/music_player.dart';
-import 'package:projeto_spotify/Utils/app_routes.dart';
 import 'package:projeto_spotify/Page/search.dart';
+
+import 'Utils/music_player.dart';
+import 'Utils/app_routes.dart';
+import 'Utils/groups.dart';
 
 import 'Page/tela_inicial.dart';
 
@@ -24,6 +24,7 @@ void main() {
 
 class MyApp extends StatelessWidget {
   MyApp({super.key});
+
   final group = Groups();
 
   @override

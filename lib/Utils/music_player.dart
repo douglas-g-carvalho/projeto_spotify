@@ -39,12 +39,20 @@ class MusicPlayer extends ChangeNotifier {
   }
 
   Widget progressBar(double width, Function loadingMaster) {
+    Duration minDuration = const Duration(milliseconds: 1);
+
     return SizedBox(
       width: width * 0.80,
       child: StreamBuilder(
         stream: player.positionStream,
         builder: (context, data) {
           musica = data.data ?? Duration.zero;
+
+          if (shuffle) {
+            minDuration = const Duration(milliseconds: 1);
+          } else {
+            minDuration = Duration.zero;
+          }
 
           if (musicaCompletada() && repeat) {
             player.seek(Duration.zero);
@@ -78,7 +86,7 @@ class MusicPlayer extends ChangeNotifier {
             progressBarColor: Colors.green[900],
             onSeek: (duration) async {
               loadingMaster(true);
-              await player.seek(duration);
+              await player.seek(duration - minDuration);
               loadingMaster(false);
             },
           );
