@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:projeto_spotify/Utils/load_screen.dart';
 
+import 'package:projeto_spotify/Utils/load_screen.dart';
 import 'package:projeto_spotify/Widget/mixes_mais_ouvidos.dart';
 import 'package:projeto_spotify/Page/trocar_playlist.dart';
 
@@ -39,9 +39,66 @@ class _TelaInicialState extends State<TelaInicial> {
         case 'mixes':
           mapMixesInfo = widget.group.mixesMap;
       }
+
       setState(() {});
       // ignore: use_build_context_synchronously
       Navigator.of(context).pop();
+    });
+  }
+
+  Future<void> loadFiles() async {
+    await ControleArquivo().readCounter('list').then((value) async {
+      if (value.isEmpty) {
+        await ControleArquivo()
+            .writeCounter('list',
+                '6AsR0V6KWciPEVnZfIFKnX-/-2AltltuDppkFyGloecxjzs-/-6bpPKPIWEPnvLmqRc7GLzw-/-08eJerYHHTin58iXQjQHpK-/-5tEzEAdmKqsugZxOq9YajR-/-60egqvG5M5ilZM8Js4hCkG-/-7234K2ZNVmAfetWuSguT7V-/-0Mgok0vqQjNAsLV5WyJvAq')
+            .then((value) async {
+          await ControleArquivo().readCounter('list').then((value) {
+            widget.group.list = value;
+            backupList = value;
+          });
+        });
+      } else {
+        widget.group.list = value;
+        backupList = value;
+      }
+    }).then((value) async {
+      if (widget.group.listMap.isNotEmpty) {
+        mapListMusics = widget.group.listMap;
+      } else {
+        await widget.group.loadMap('list').then((value) {
+          mapListMusics = widget.group.listMap;
+        });
+      }
+
+      isLoading.add('List');
+    });
+
+    await ControleArquivo().readCounter('mixes').then((value) async {
+      if (value.isEmpty) {
+        await ControleArquivo()
+            .writeCounter('mixes',
+                '6G4O7YRLjTk4T4VPa4fDAM-/-7w13RcdObCa0WvQrjVJDfp-/-5z2dTZUjDD90wM4Z9youwS')
+            .then((value) async {
+          await ControleArquivo().readCounter('mixes').then((value) {
+            widget.group.mixes = value;
+            backupMixes = value;
+          });
+        });
+      } else {
+        widget.group.mixes = value;
+        backupMixes = value;
+      }
+    }).then((value) async {
+      if (widget.group.mixesMap.isNotEmpty) {
+        mapMixesInfo = widget.group.mixesMap;
+      } else {
+        await widget.group.loadMap('mixes').then((value) {
+          mapMixesInfo = widget.group.mixesMap;
+        });
+      }
+
+      isLoading.add('Mixes');
     });
   }
 
@@ -49,88 +106,15 @@ class _TelaInicialState extends State<TelaInicial> {
   void initState() {
     super.initState();
 
-    ControleArquivo().readCounter('list').then((value) {
-      if (value.isEmpty) {
-        ControleArquivo()
-            .writeCounter('list',
-                '6AsR0V6KWciPEVnZfIFKnX-/-2AltltuDppkFyGloecxjzs-/-6bpPKPIWEPnvLmqRc7GLzw-/-08eJerYHHTin58iXQjQHpK-/-5tEzEAdmKqsugZxOq9YajR-/-60egqvG5M5ilZM8Js4hCkG-/-7234K2ZNVmAfetWuSguT7V-/-0Mgok0vqQjNAsLV5WyJvAq')
-            .then((value) {
-          ControleArquivo().readCounter('list').then((value) {
-            setState(() {
-              widget.group.list = value;
-              backupList = value;
-            });
-          });
-        });
-      } else {
-        setState(() {
-          widget.group.list = value;
-          backupList = value;
-        });
-      }
-    }).then((value) {
-      if (widget.group.listMap.isNotEmpty) {
-        mapListMusics = widget.group.listMap;
-        if (mapListMusics.isNotEmpty) {
-          isLoading.add('List');
-          setState(() {});
-        }
-      }
-
-      if (mapListMusics.isEmpty) {
-        widget.group.loadMap('list').then((value) {
-          mapListMusics = widget.group.listMap;
-          if (mapListMusics.isNotEmpty) {
-            isLoading.add('List');
-            setState(() {});
-          }
-        });
-      }
-    });
-
-    ControleArquivo().readCounter('mixes').then((value) {
-      if (value.isEmpty) {
-        ControleArquivo()
-            .writeCounter('mixes',
-                '6G4O7YRLjTk4T4VPa4fDAM-/-7w13RcdObCa0WvQrjVJDfp-/-5z2dTZUjDD90wM4Z9youwS')
-            .then((value) {
-          ControleArquivo().readCounter('mixes').then((value) {
-            setState(() {
-              widget.group.mixes = value;
-              backupMixes = value;
-            });
-          });
-        });
-      } else {
-        setState(() {
-          widget.group.mixes = value;
-          backupMixes = value;
-        });
-      }
-    }).then((value) {
-      if (widget.group.mixesMap.isNotEmpty) {
-        mapMixesInfo = widget.group.mixesMap;
-        if (mapMixesInfo.isNotEmpty) {
-          isLoading.add('Mixes');
-          setState(() {});
-        }
-      }
-
-      if (mapMixesInfo.isEmpty) {
-        widget.group.loadMap('mixes').then((value) {
-          mapMixesInfo = widget.group.mixesMap;
-          if (mapMixesInfo.isNotEmpty) {
-            isLoading.add('Mixes');
-            setState(() {});
-          }
-        });
-      }
+    loadFiles().then((value) {
+      setState(() {});
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+
 
     return Scaffold(
       appBar: AppBar(

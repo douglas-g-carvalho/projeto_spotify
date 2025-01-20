@@ -55,7 +55,7 @@ class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
                         borderRadius: BorderRadius.circular(2),
                         child: ImageLoader().imageNetwork(
                             urlImage:
-                                widget.mapMixesInfo.elementAt(index)['cover']!,
+                                widget.mapMixesInfo.elementAtOrNull(index)?['cover'] ?? '',
                             size: width * 0.45),
                       ),
                     ),
@@ -65,7 +65,7 @@ class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
                       child: SizedBox(
                         width: width * 0.4,
                         child: Text(
-                          widget.mapMixesInfo.elementAt(index)['name']!,
+                          widget.mapMixesInfo.elementAtOrNull(index)?['name'] ?? '',
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: Colors.white,
@@ -76,12 +76,15 @@ class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
                     ),
                     TextButton(
                       onPressed: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => PlaylistStyle(
-                                    trackId: widget.mapMixesInfo
-                                        .elementAt(index)['spotify']!)));
+                        if (widget.mapMixesInfo.elementAt(index)['spotify'] !=
+                            null) {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => PlaylistStyle(
+                                      trackId: widget.mapMixesInfo
+                                          .elementAt(index)['spotify']!)));
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         shape: const RoundedRectangleBorder(

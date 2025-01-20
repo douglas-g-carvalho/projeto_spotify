@@ -43,7 +43,7 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
           color: Colors.green,
         ),
       ),
-      height: height * 0.19,
+      height: height * 0.21,
       width: width,
       child: Padding(
         padding: const EdgeInsets.all(8.0),

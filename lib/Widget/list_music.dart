@@ -46,9 +46,9 @@ class _ListMusicState extends State<ListMusic> {
               },
               itemBuilder: (_, int index) {
                 return MusicChoices(
-                  texto: widget.mapListMusics.elementAt(index)['name']!,
-                  icon: widget.mapListMusics.elementAt(index)['cover']!,
-                  spotify: widget.mapListMusics.elementAt(index)['spotify']!,
+                  texto: widget.mapListMusics.elementAtOrNull(index)?['name']!,
+                  icon: widget.mapListMusics.elementAtOrNull(index)?['cover']!,
+                  spotify: widget.mapListMusics.elementAtOrNull(index)?['spotify']!,
                 );
               },
             ),

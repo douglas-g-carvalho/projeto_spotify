@@ -4,9 +4,9 @@ import 'package:projeto_spotify/Widget/play_music.dart';
 import '../Utils/image_loader.dart';
 
 class MusicChoices extends StatelessWidget {
-  final String texto;
-  final String icon;
-  final String spotify;
+  final String? texto;
+  final String? icon;
+  final String? spotify;
 
   const MusicChoices({
     super.key,
@@ -25,8 +25,8 @@ class MusicChoices extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
         Container(
-          width: width*0.5,
-          height: height*0.075,
+          width: width * 0.5,
+          height: height * 0.075,
           decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(2),
               shape: BoxShape.rectangle,
@@ -37,15 +37,16 @@ class MusicChoices extends StatelessWidget {
                 children: [
                   ClipRRect(
                       borderRadius: BorderRadius.circular(2),
-                      child: ImageLoader().imageNetwork(urlImage: icon, size: width*0.165)),
+                      child: ImageLoader().imageNetwork(
+                          urlImage: icon ?? '', size: width * 0.165)),
                   Expanded(
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       child: Text(
-                        texto,
+                        texto ?? '',
                         textAlign: TextAlign.center,
-                        style:  TextStyle(
-                          fontSize: height*0.02,
+                        style: TextStyle(
+                          fontSize: height * 0.02,
                           color: Colors.white,
                         ),
                       ),
@@ -56,17 +57,18 @@ class MusicChoices extends StatelessWidget {
               TextButton(
                 style: ElevatedButton.styleFrom(
                   shape: const RoundedRectangleBorder(),
-               
                 ),
                 onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => PlayMusic(trackId: spotify)));
+                  if (spotify != null) {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => PlayMusic(trackId: spotify!)));
+                  }
                 },
-                child:  SizedBox(
+                child: SizedBox(
                   width: width * 0.5,
-                  height: height*0.06,
+                  height: height * 0.06,
                 ),
               ),
             ],
