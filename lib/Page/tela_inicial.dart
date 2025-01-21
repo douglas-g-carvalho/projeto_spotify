@@ -115,14 +115,9 @@ class _TelaInicialState extends State<TelaInicial> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
-
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: Text(
-          'Spotify Fake',
-          style: TextStyle(color: Colors.white, fontSize: size.width * 0.065),
-        ),
         leading: TextButton(
           onPressed: () {
             Navigator.of(context)
