@@ -37,18 +37,20 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
     final width = size.width;
     final height = size.height;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 21, 39, 29),
-        border: Border.all(
-          color: Constants.color,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 3.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 54, 35, 58),
+          border: Border.all(
+            color: Constants.color,
+            width: width * 0.005,
+          ),
         ),
-      ),
-      height: height * 0.21,
-      width: width,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        height: height * 0.21,
+        width: width * 0.98,
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -71,8 +73,9 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                   child: Icon(
                     widget.musicPlayer.repeat ? Icons.repeat_one : Icons.repeat,
                     size: width * 0.078,
-                    color:
-                        widget.musicPlayer.repeat ? Constants.color : Colors.white,
+                    color: widget.musicPlayer.repeat
+                        ? Constants.color
+                        : Colors.white,
                   ),
                 ),
                 TextButton(
@@ -90,77 +93,87 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                 ),
               ],
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
+            Padding(
+              padding: const EdgeInsets.all(5.0),
+              child:
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 ImageLoader().imageNetwork(
                     urlImage: widget.imageMusic, size: width * 0.25),
-                Padding(
-                  padding: const EdgeInsets.all(5),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: width * 0.5,
-                        child: Text(
-                          widget.nameMusic,
-                          textAlign: TextAlign.center,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: height * 0.023,
+                SizedBox(width: width * 0.03),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: width * 0.44,
+                      child: Text(
+                        widget.nameMusic,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: height * 0.023,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: width * 0.44,
+                      child: Text(
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        widget.musicPlayer.textArtists(widget.artistName),
+                        style: TextStyle(
+                            color: Colors.white, fontSize: width * 0.045),
+                      ),
+                    ),
+                    widget.musicPlayer.progressBar(
+                      size.width * 0.55,
+                      widget.loadingMaster,
+                    ),
+                  ],
+                ),
+                SizedBox(width: width * 0.03),
+                Stack(
+                  children: [
+                    widget.loading
+                        ? SizedBox(
+                            width: ((width + height) * 0.047),
+                            height: ((width + height) * 0.047),
+                            child: const CircularProgressIndicator(
+                                color: Constants.color))
+                        : Icon(
+                            (widget.musicPlayer.player.playing)
+                                ? Icons.pause
+                                : Icons.play_arrow,
+                            color: Constants.color,
+                            size: width * 0.144,
                           ),
+                    TextButton(
+                        style: ElevatedButton.styleFrom(
+                          splashFactory: widget.loading ? NoSplash.splashFactory : InkSplash.splashFactory,
+                          minimumSize: Size(0.1, 0.1),
                         ),
-                      ),
-                      SizedBox(
-                        width: width * 0.5,
-                        child: Text(
-                          textAlign: TextAlign.center,
-                          overflow: TextOverflow.ellipsis,
-                          widget.musicPlayer.textArtists(widget.artistName),
-                          style: TextStyle(
-                              color: Colors.white, fontSize: width * 0.045),
-                        ),
-                      ),
-                      widget.musicPlayer.progressBar(
-                        size.width * 0.6,
-                        widget.loadingMaster,
-                      ),
-                    ],
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    if (widget.musicPlayer.musicaCompletada()) {
-                      widget.musicPlayer.player.seek(Duration.zero);
-                      setState(() => widget.musicPlayer.musica = Duration.zero);
-                    }
+                        onPressed: () {
+                          if (!widget.loading) {
+                            if (widget.musicPlayer.musicaCompletada()) {
+                              widget.musicPlayer.player.seek(Duration.zero);
+                              setState(() =>
+                                  widget.musicPlayer.musica = Duration.zero);
+                            }
 
-                    widget.loadingMaster(true);
+                            widget.loadingMaster(true);
 
-                    widget.musicPlayer.play().then((value) {
-                      widget.loadingMaster(false);
-                    });
-                  },
-                  child: Stack(
-                    children: [
-                      widget.loading
-                          ? SizedBox(
-                              width: ((width + height) * 0.035),
-                              height: ((width + height) * 0.035),
-                              child: const CircularProgressIndicator(
-                                  color: Constants.color))
-                          : Icon(
-                              (widget.musicPlayer.player.playing)
-                                  ? Icons.pause
-                                  : Icons.play_arrow,
-                              color: Constants.color,
-                              size: width * 0.12,
-                            ),
-                    ],
-                  ),
+                            widget.musicPlayer.play().then((value) {
+                              widget.loadingMaster(false);
+                            });
+                          }
+                        },
+                        child: SizedBox(
+                          width: width * 0.09,
+                          height: height * 0.055,
+                        )),
+                  ],
                 ),
-              ],
+              ]),
             ),
           ],
         ),

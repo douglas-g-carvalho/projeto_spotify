@@ -85,7 +85,7 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                   decoration: const BoxDecoration(color: Colors.black),
                   padding: const EdgeInsets.all(5),
                   width: double.infinity,
-                  height: isPlaying ? height * 0.727 : double.infinity,
+                  height: isPlaying ? height * 0.69 : double.infinity,
                   child: ListView.separated(
                     itemCount: musicPlayer.songList.length,
                     separatorBuilder: (BuildContext context, int index) =>
