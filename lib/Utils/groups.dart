@@ -3,6 +3,9 @@ import 'package:projeto_spotify/Utils/constants.dart';
 import 'package:spotify/spotify.dart';
 
 class Groups extends ChangeNotifier {
+  String token = '';
+  String apelido = '';
+
   List<String> list = [];
   List<String> mixes = [];
 

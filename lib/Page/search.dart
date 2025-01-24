@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+
 import 'package:just_audio/just_audio.dart';
 import 'package:projeto_spotify/Models/search_model.dart';
 import 'package:projeto_spotify/Widget/search_play.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
+import '../Utils/constants.dart';
 import '../Utils/load_screen.dart';
 
 class Search extends StatefulWidget {
@@ -148,9 +150,9 @@ class _SearchState extends State<Search> {
     return Scaffold(
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.black,
-        selectedIconTheme: const IconThemeData(color: Colors.green),
+        selectedIconTheme: const IconThemeData(color: Constants.color),
         unselectedIconTheme: const IconThemeData(color: Colors.white),
-        selectedItemColor: Colors.green,
+        selectedItemColor: Constants.color,
         unselectedItemColor: Colors.white,
         currentIndex: 1,
         items: const [
@@ -161,7 +163,7 @@ class _SearchState extends State<Search> {
         onTap: (value) {
           switch (value) {
             case 0:
-              Navigator.pushNamed(context, '/');
+              Navigator.pushNamed(context, '/inicio');
             case 1:
               Navigator.pushNamed(context, '/buscar');
           }

@@ -167,7 +167,7 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                           .get(value)
                           .then((valueSpotify) {});
 
-                      await ControleArquivo().writeCounter(file, value);
+                      await ControleArquivo().writeAdd(file, value);
 
                       await ControleArquivo().readCounter(file).then((value) {
                         switch (file) {
@@ -258,7 +258,7 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
 
                                   storage.delete('list').then((value) {
                                     storage
-                                        .writeCounter(
+                                        .writeAdd(
                                       'list',
                                       '6AsR0V6KWciPEVnZfIFKnX-/-2AltltuDppkFyGloecxjzs-/-6bpPKPIWEPnvLmqRc7GLzw-/-08eJerYHHTin58iXQjQHpK-/-5tEzEAdmKqsugZxOq9YajR-/-60egqvG5M5ilZM8Js4hCkG-/-7234K2ZNVmAfetWuSguT7V-/-0Mgok0vqQjNAsLV5WyJvAq',
                                     )
@@ -292,7 +292,7 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
 
                                   storage.delete('mixes').then((value) {
                                     storage
-                                        .writeCounter(
+                                        .writeAdd(
                                       'mixes',
                                       '6G4O7YRLjTk4T4VPa4fDAM-/-7w13RcdObCa0WvQrjVJDfp-/-5z2dTZUjDD90wM4Z9youwS',
                                     )
@@ -337,104 +337,106 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
         centerTitle: true,
         backgroundColor: Colors.black,
       ),
-      body: widget.group.listMap.isEmpty && widget.group.mixesMap.isEmpty
-          ? LoadScreen().loadingNormal(size)
-          : SingleChildScrollView(
-              child: Column(children: [
-                Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'aaa',
-                        style: TextStyle(color: Colors.transparent),
-                      ),
-                      Text(
-                        'Lista',
-                        style: TextStyle(
-                          fontSize: size.width * 0.06,
-                          color: Colors.white,
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          // faz o input aparecer e verificar se existe o link
-                          add(size, 'list');
-                        },
-                        style: ElevatedButton.styleFrom(
-                          minimumSize:
-                              Size(size.width * 0.01, size.height * 0.005),
-                        ),
-                        child: const Icon(Icons.add_circle_outline),
-                      ),
-                    ],
+      body: SingleChildScrollView(
+        child: Column(children: [
+          Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'aaa',
+                  style: TextStyle(color: Colors.transparent),
+                ),
+                Text(
+                  'Lista',
+                  style: TextStyle(
+                    fontSize: size.width * 0.06,
+                    color: Colors.white,
+                    decoration: TextDecoration.none,
                   ),
                 ),
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white),
+                TextButton(
+                  onPressed: () {
+                    // faz o input aparecer e verificar se existe o link
+                    add(size, 'list');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: Size(size.width * 0.01, size.height * 0.005),
                   ),
-                  child: SingleChildScrollView(
-                    child: SizedBox(
-                      width: size.width * 0.80,
-                      height: size.height * 0.37,
-                      child: ListView.builder(
-                          itemCount: widget.group.listMap.length,
-                          itemBuilder: (ctx, index) {
-                            return rowText('list', size, index);
-                          }),
-                    ),
+                  child: const Icon(
+                    Icons.add_circle_outline,
+                    color: Colors.green,
                   ),
                 ),
-                SizedBox(height: size.height * 0.005),
-                Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'aaa',
-                        style: TextStyle(color: Colors.transparent),
-                      ),
-                      Text(
-                        'Mixes',
-                        style: TextStyle(
-                          fontSize: size.width * 0.06,
-                          color: Colors.white,
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          // faz o input aparecer e verificar se existe o link
-                          add(size, 'mixes');
-                        },
-                        style: ElevatedButton.styleFrom(
-                          minimumSize:
-                              Size(size.width * 0.01, size.height * 0.005),
-                        ),
-                        child: const Icon(Icons.add_circle_outline),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white),
-                  ),
-                  child: SingleChildScrollView(
-                    child: SizedBox(
-                        width: size.width * 0.80,
-                        height: size.height * 0.37,
-                        child: ListView.builder(
-                            itemCount: widget.group.mixesMap.length,
-                            itemBuilder: (ctx, index) {
-                              return rowText('mixes', size, index);
-                            })),
-                  ),
-                ),
-              ]),
+              ],
             ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.white),
+            ),
+            child: SingleChildScrollView(
+              child: SizedBox(
+                width: size.width * 0.80,
+                height: size.height * 0.37,
+                child: ListView.builder(
+                    itemCount: widget.group.listMap.length,
+                    itemBuilder: (ctx, index) {
+                      return rowText('list', size, index);
+                    }),
+              ),
+            ),
+          ),
+          SizedBox(height: size.height * 0.005),
+          Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'aaa',
+                  style: TextStyle(color: Colors.transparent),
+                ),
+                Text(
+                  'Mixes',
+                  style: TextStyle(
+                    fontSize: size.width * 0.06,
+                    color: Colors.white,
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    // faz o input aparecer e verificar se existe o link
+                    add(size, 'mixes');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: Size(size.width * 0.01, size.height * 0.005),
+                  ),
+                  child: const Icon(
+                    Icons.add_circle_outline,
+                    color: Colors.green,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.white),
+            ),
+            child: SingleChildScrollView(
+              child: SizedBox(
+                  width: size.width * 0.80,
+                  height: size.height * 0.37,
+                  child: ListView.builder(
+                      itemCount: widget.group.mixesMap.length,
+                      itemBuilder: (ctx, index) {
+                        return rowText('mixes', size, index);
+                      })),
+            ),
+          ),
+        ]),
+      ),
     );
   }
 }

@@ -44,6 +44,7 @@ class MusicChoices extends StatelessWidget {
                       padding: const EdgeInsets.all(8),
                       child: Text(
                         texto ?? '',
+                        overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: height * 0.02,

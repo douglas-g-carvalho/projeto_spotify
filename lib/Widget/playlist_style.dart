@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:spotify/spotify.dart' as sptf;
 import 'package:projeto_spotify/Utils/music_player.dart';
 
-import '../Utils/image_loader.dart';
 import 'whats_playing.dart';
 
+import '../Utils/image_loader.dart';
 import '../Utils/load_screen.dart';
 import '../Utils/constants.dart';
 
@@ -184,7 +184,7 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                                             : Icons.play_circle,
                                         color: loading
                                             ? Colors.transparent
-                                            : Colors.green,
+                                            : Constants.color,
                                         size: (width + height) * 0.04,
                                       ),
                                       if (loading == true &&
@@ -199,7 +199,7 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                                             height: ((width + height) * 0.03),
                                             child:
                                                 const CircularProgressIndicator(
-                                                    color: Colors.green),
+                                                    color: Constants.color),
                                           ),
                                         ),
                                     ],

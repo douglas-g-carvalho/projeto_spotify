@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'constants.dart';
+
 class LoadScreen {
   Future<void> loadingScreen(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -10,11 +12,13 @@ class LoadScreen {
         builder: (ctx) {
           return PopScope(
             canPop: false,
-            child: AlertDialog(
-              backgroundColor: Colors.transparent,
-              actions: [
-                loadingNormal(size),
-              ],
+            child: SingleChildScrollView(
+              child: AlertDialog(
+                backgroundColor: Colors.transparent,
+                actions: [
+                  loadingNormal(size),
+                ],
+              ),
             ),
           );
         });
@@ -27,7 +31,7 @@ class LoadScreen {
         width: size.width * 0.10,
         height: size.height * 0.05,
         child: const CircularProgressIndicator(
-          color: Colors.green,
+          color: Constants.color,
         ),
       ),
     );

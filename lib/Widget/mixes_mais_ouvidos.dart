@@ -27,10 +27,11 @@ class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
 
     return Column(
       children: [
-        Text(
-          'Alguns álbuns para você',
-          style: TextStyle(color: Colors.white, fontSize: height * 0.03),
-        ),
+        if (widget.mapMixesInfo.isNotEmpty)
+          Text(
+            'Alguns álbuns para você',
+            style: TextStyle(color: Colors.white, fontSize: height * 0.03),
+          ),
         const SizedBox(height: 5),
         Container(
           padding: const EdgeInsetsDirectional.symmetric(horizontal: 10),
@@ -54,8 +55,9 @@ class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(2),
                         child: ImageLoader().imageNetwork(
-                            urlImage:
-                                widget.mapMixesInfo.elementAtOrNull(index)?['cover'] ?? '',
+                            urlImage: widget.mapMixesInfo
+                                    .elementAtOrNull(index)?['cover'] ??
+                                '',
                             size: width * 0.45),
                       ),
                     ),
@@ -65,7 +67,8 @@ class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
                       child: SizedBox(
                         width: width * 0.4,
                         child: Text(
-                          widget.mapMixesInfo.elementAtOrNull(index)?['name'] ?? '',
+                          widget.mapMixesInfo.elementAtOrNull(index)?['name'] ??
+                              '',
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: Colors.white,

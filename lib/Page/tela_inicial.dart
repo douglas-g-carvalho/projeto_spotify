@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:projeto_spotify/Utils/load_screen.dart';
 import 'package:projeto_spotify/Widget/mixes_mais_ouvidos.dart';
 import 'package:projeto_spotify/Page/trocar_playlist.dart';
 
+import '../Utils/constants.dart';
 import '../Utils/controle_arquivo.dart';
+import '../Utils/database.dart';
 import '../Utils/groups.dart';
+
 import '../Widget/list_music.dart';
 
 class TelaInicial extends StatefulWidget {
@@ -30,85 +34,75 @@ class _TelaInicialState extends State<TelaInicial> {
   Set<String> isLoading = {};
 
   Future<void> updateMap(String file) async {
-    LoadScreen().loadingScreen(context);
+    await widget.group.loadMap(file);
 
-    await widget.group.loadMap(file).then((value) {
-      switch (file) {
-        case 'list':
-          mapListMusics = widget.group.listMap;
-        case 'mixes':
-          mapMixesInfo = widget.group.mixesMap;
-      }
-
-      setState(() {});
-      // ignore: use_build_context_synchronously
-      Navigator.of(context).pop();
-    });
+    switch (file) {
+      case 'list':
+        mapListMusics = widget.group.listMap;
+      case 'mixes':
+        mapMixesInfo = widget.group.mixesMap;
+    }
   }
 
   Future<void> loadFiles() async {
-    await ControleArquivo().readCounter('list').then((value) async {
-      if (value.isEmpty) {
-        await ControleArquivo()
-            .writeCounter('list',
-                '6AsR0V6KWciPEVnZfIFKnX-/-2AltltuDppkFyGloecxjzs-/-6bpPKPIWEPnvLmqRc7GLzw-/-08eJerYHHTin58iXQjQHpK-/-5tEzEAdmKqsugZxOq9YajR-/-60egqvG5M5ilZM8Js4hCkG-/-7234K2ZNVmAfetWuSguT7V-/-0Mgok0vqQjNAsLV5WyJvAq')
-            .then((value) async {
-          await ControleArquivo().readCounter('list').then((value) {
-            widget.group.list = value;
-            backupList = value;
-          });
-        });
-      } else {
-        widget.group.list = value;
-        backupList = value;
-      }
-    }).then((value) async {
-      if (widget.group.listMap.isNotEmpty) {
-        mapListMusics = widget.group.listMap;
-      } else {
-        await widget.group.loadMap('list').then((value) {
-          mapListMusics = widget.group.listMap;
-        });
-      }
+    try {
+      widget.group.token = FirebaseAuth.instance.currentUser!.uid;
+      String listaDB = '';
+      String mixesDB = '';
+
+      await Database().dbRef.get().then((value) {
+        Map info =
+            value.child(FirebaseAuth.instance.currentUser!.uid).value as Map;
+
+        widget.group.apelido = info['Apelido'];
+        listaDB = info['Lista'];
+        mixesDB = info['Mixes'];
+      });
+
+      await ControleArquivo().overWrite('list', listaDB);
+      await ControleArquivo().overWrite('mixes', mixesDB);
+
+      widget.group.list = await ControleArquivo().readCounter('list');
+      widget.group.mixes = await ControleArquivo().readCounter('mixes');
+
+      backupList = widget.group.list;
+      backupMixes = widget.group.mixes;
+
+      await widget.group.loadMap('list');
+      await widget.group.loadMap('mixes');
+
+      mapListMusics = widget.group.listMap;
+      mapMixesInfo = widget.group.mixesMap;
 
       isLoading.add('List');
-    });
-
-    await ControleArquivo().readCounter('mixes').then((value) async {
-      if (value.isEmpty) {
-        await ControleArquivo()
-            .writeCounter('mixes',
-                '6G4O7YRLjTk4T4VPa4fDAM-/-7w13RcdObCa0WvQrjVJDfp-/-5z2dTZUjDD90wM4Z9youwS')
-            .then((value) async {
-          await ControleArquivo().readCounter('mixes').then((value) {
-            widget.group.mixes = value;
-            backupMixes = value;
-          });
-        });
-      } else {
-        widget.group.mixes = value;
-        backupMixes = value;
-      }
-    }).then((value) async {
-      if (widget.group.mixesMap.isNotEmpty) {
-        mapMixesInfo = widget.group.mixesMap;
-      } else {
-        await widget.group.loadMap('mixes').then((value) {
-          mapMixesInfo = widget.group.mixesMap;
-        });
-      }
-
       isLoading.add('Mixes');
-    });
+    } catch (error) {
+      isLoading.add('List');
+      isLoading.add('Mixes');
+    }
+  }
+
+  Future<void> loadAllSaved() async {
+    mapListMusics = widget.group.listMap;
+    mapMixesInfo = widget.group.mixesMap;
+
+    isLoading.add('List');
+    isLoading.add('Mixes');
   }
 
   @override
   void initState() {
     super.initState();
 
-    loadFiles().then((value) {
-      setState(() {});
-    });
+    if (widget.group.token != FirebaseAuth.instance.currentUser!.uid) {
+      loadFiles().then((value) {
+        setState(() {});
+      });
+    } else {
+      loadAllSaved().then((value) {
+        setState(() {});
+      });
+    }
   }
 
   @override
@@ -117,75 +111,159 @@ class _TelaInicialState extends State<TelaInicial> {
 
     return Scaffold(
       appBar: AppBar(
+        title: Text(
+          (isLoading.length == 2) ? widget.group.apelido : '',
+          style: TextStyle(color: Colors.white),
+        ),
         centerTitle: true,
         leading: TextButton(
           onPressed: () {
-            Navigator.of(context)
-                .push(MaterialPageRoute(
-                    builder: (context) => TrocarPlaylist(
-                          group: widget.group,
-                        )))
-                .then((value) {
-              if (widget.group.get('list').length != backupList.length) {
-                updateMap('list');
-                backupList = widget.group.get('list');
-              }
+            if (isLoading.length == 2) {
+              Navigator.of(context)
+                  .push(MaterialPageRoute(
+                      builder: (context) => TrocarPlaylist(
+                            group: widget.group,
+                          )))
+                  .then((value) async {
+                if (context.mounted) {
+                  LoadScreen().loadingScreen(context);
+                }
 
-              if (widget.group.get('mixes').length != backupMixes.length) {
-                updateMap('mixes');
-                backupMixes = widget.group.get('mixes');
-              }
-            });
+                if (widget.group.get('list').length != backupList.length) {
+                  await updateMap('list');
+                  backupList = widget.group.get('list');
+                }
+
+                if (widget.group.get('mixes').length != backupMixes.length) {
+                  await updateMap('mixes');
+                  backupMixes = widget.group.get('mixes');
+                }
+
+                String lista = await ControleArquivo().getFile('list');
+                String mixes = await ControleArquivo().getFile('mixes');
+
+                Database().updateDataBase().update({
+                  'Apelido': widget.group.apelido,
+                  'Lista': lista,
+                  'Mixes': mixes,
+                });
+
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
+
+                setState(() {});
+              });
+            }
           },
-          child: const Icon(
+          child: Icon(
             Icons.add,
-            color: Colors.green,
+            color: isLoading.length != 2
+                ? Constants.color.withOpacity(0.5)
+                : Constants.color,
           ),
         ),
+        actions: [
+          TextButton(
+              onPressed: () {
+                if (isLoading.length == 2) {
+                  Navigator.of(context).pushNamed('/');
+                }
+              },
+              child: Icon(
+                Icons.account_circle,
+                size: size.height * 0.04,
+                color: isLoading.length != 2
+                    ? Constants.color.withOpacity(0.5)
+                    : Constants.color,
+              )),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.black,
-        selectedIconTheme: const IconThemeData(color: Colors.green),
+        selectedIconTheme: const IconThemeData(color: Constants.color),
         unselectedIconTheme: const IconThemeData(color: Colors.white),
-        selectedItemColor: Colors.green,
+        selectedItemColor: Constants.color,
         unselectedItemColor: Colors.white,
         currentIndex: 0,
-        items: const [
+        items: [
           BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined), label: 'Inicio'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Buscar'),
+              icon: Icon(
+                Icons.home_outlined,
+                color: isLoading.length != 2
+                    ? Constants.color.withOpacity(0.5)
+                    : Constants.color,
+              ),
+              label: 'Inicio'),
+          BottomNavigationBarItem(
+              icon: Icon(
+                Icons.search,
+                color: isLoading.length != 2
+                    ? Colors.white.withOpacity(0.5)
+                    : Colors.white,
+              ),
+              label: 'Buscar'),
         ],
-        onTap: (value) {
-          switch (value) {
-            case 0:
-              Navigator.pushNamed(context, '/');
-            case 1:
-              Navigator.pushNamed(context, '/buscar');
-          }
-        },
+        onTap: isLoading.length != 2
+            ? null
+            : (value) {
+                switch (value) {
+                  case 0:
+                    Navigator.pushNamed(context, '/inicio');
+                  case 1:
+                    Navigator.pushNamed(context, '/buscar');
+                }
+              },
       ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: isLoading.length != 2
               ? LoadScreen().loadingNormal(size)
-              : Column(
-                  children: [
-                    SizedBox(height: size.height * 0.01),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
+              : (mapListMusics.isEmpty && mapMixesInfo.isEmpty)
+                  ? Center(
+                      heightFactor: 2.1,
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            height: size.height * 0.30,
+                            child: ClipOval(
+                              child: ColorFiltered(
+                                colorFilter: ColorFilter.mode(
+                                    Colors.grey, BlendMode.saturation),
+                                child: Image.asset('assets/icon.png'),
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            height: size.height * 0.01,
+                          ),
+                          Text(
+                            'Lista e Mixes estão vazias.',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: size.height * 0.03),
+                          )
+                        ],
+                      ),
+                    )
+                  : Column(
                       children: [
-                        ListMusic(
-                          mapListMusics: mapListMusics,
-                          group: widget.group,
-                        ),
-                        MixesMaisOuvidos(
-                          group: widget.group,
-                          mapMixesInfo: mapMixesInfo,
+                        SizedBox(height: size.height * 0.01),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            ListMusic(
+                              mapListMusics: mapListMusics,
+                              group: widget.group,
+                            ),
+                            MixesMaisOuvidos(
+                              group: widget.group,
+                              mapMixesInfo: mapMixesInfo,
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
         ),
       ),
     );

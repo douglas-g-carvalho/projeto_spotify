@@ -1,9 +1,13 @@
+import 'package:flutter/material.dart';
+
 import 'dart:core';
 import 'dart:math';
+
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
-import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+
+import 'constants.dart';
 
 class MusicPlayer extends ChangeNotifier {
   Duration musica = Duration.zero;
@@ -80,10 +84,10 @@ class MusicPlayer extends ChangeNotifier {
             buffered: player.bufferedPosition,
             bufferedBarColor: Colors.grey,
             baseBarColor: Colors.white,
-            thumbColor: Colors.green,
+            thumbColor: Constants.color,
             thumbRadius: 7,
             timeLabelTextStyle: const TextStyle(color: Colors.white),
-            progressBarColor: Colors.green[900],
+            progressBarColor: Constants.color[900],
             onSeek: (duration) async {
               loadingMaster(true);
               await player.seek(duration - minDuration);

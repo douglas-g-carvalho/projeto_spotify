@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+
 import 'package:projeto_spotify/Utils/music_player.dart';
 import 'package:just_audio/just_audio.dart';
+
+import '../Utils/constants.dart';
 
 class SearchPlay extends StatefulWidget {
   final String title;
@@ -109,7 +112,7 @@ class _SearchPlayState extends State<SearchPlay> {
               textAlign: TextAlign.center,
               widget.viewCount,
               style: TextStyle(
-                  color: const Color.fromARGB(255, 112, 231, 114),
+                  color: Constants.color,
                   fontSize: width * 0.045),
             ),
             SizedBox(height: height * 0.01),
@@ -120,7 +123,7 @@ class _SearchPlayState extends State<SearchPlay> {
                   textAlign: TextAlign.center,
                   widget.uploadDateRaw,
                   style: TextStyle(
-                      color: const Color.fromARGB(255, 112, 231, 114),
+                      color: Constants.color,
                       fontSize: width * 0.045),
                 ),
                 Text(
@@ -176,7 +179,7 @@ class _SearchPlayState extends State<SearchPlay> {
                             ? Icons.pause_circle_outline
                             : Icons.play_circle_outline,
                         size: width * 0.38,
-                        color: loading ? Colors.transparent : Colors.green,
+                        color: loading ? Colors.transparent : Constants.color,
                       ),
                       if (loading)
                         Positioned(
@@ -186,7 +189,7 @@ class _SearchPlayState extends State<SearchPlay> {
                             width: width * 0.30,
                             height: height * 0.14,
                             child: const CircularProgressIndicator(
-                              color: Colors.green,
+                              color: Constants.color,
                             ),
                           ),
                         )
@@ -201,7 +204,7 @@ class _SearchPlayState extends State<SearchPlay> {
                   child: Icon(
                     Icons.loop,
                     size: width * 0.12,
-                    color: musicPlayer.repeat ? Colors.green : Colors.white,
+                    color: musicPlayer.repeat ? Constants.color : Colors.white,
                   ),
                 ),
               ],

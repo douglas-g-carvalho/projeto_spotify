@@ -1,4 +1,5 @@
 class AppRoutes {
-  static const inicio = '/';
+  static const login = '/';
+  static const inicio = '/inicio';
   static const buscar = '/buscar';
 }

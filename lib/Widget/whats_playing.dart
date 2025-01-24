@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../Utils/constants.dart';
 import '../Utils/music_player.dart';
 import '../Utils/image_loader.dart';
 
@@ -40,7 +41,7 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
       decoration: BoxDecoration(
         color: const Color.fromARGB(255, 21, 39, 29),
         border: Border.all(
-          color: Colors.green,
+          color: Constants.color,
         ),
       ),
       height: height * 0.21,
@@ -71,7 +72,7 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                     widget.musicPlayer.repeat ? Icons.repeat_one : Icons.repeat,
                     size: width * 0.078,
                     color:
-                        widget.musicPlayer.repeat ? Colors.green : Colors.white,
+                        widget.musicPlayer.repeat ? Constants.color : Colors.white,
                   ),
                 ),
                 TextButton(
@@ -83,7 +84,7 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                     Icons.shuffle,
                     size: width * 0.078,
                     color: widget.musicPlayer.shuffle
-                        ? Colors.green
+                        ? Constants.color
                         : Colors.white,
                   ),
                 ),
@@ -148,12 +149,12 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                               width: ((width + height) * 0.035),
                               height: ((width + height) * 0.035),
                               child: const CircularProgressIndicator(
-                                  color: Colors.green))
+                                  color: Constants.color))
                           : Icon(
                               (widget.musicPlayer.player.playing)
                                   ? Icons.pause
                                   : Icons.play_arrow,
-                              color: Colors.green,
+                              color: Constants.color,
                               size: width * 0.12,
                             ),
                     ],

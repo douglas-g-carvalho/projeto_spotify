@@ -9,6 +9,11 @@ class ControleArquivo {
     return File('$path/$fileName.txt');
   }
 
+  Future<String> getFile(String fileName) async {
+    final file = await _localFile(fileName);
+    return await file.readAsString();
+  }
+
   Future<List<String>> readCounter(String filename) async {
     try {
       final file = await _localFile(filename);
@@ -16,7 +21,7 @@ class ControleArquivo {
       // Read the file
       final contents = await file.readAsString();
       final List<String> listContents = contents.split('-/-');
-      listContents.removeLast();
+      listContents.removeWhere((value) => value == '');
 
       return listContents;
     } catch (e) {
@@ -25,7 +30,14 @@ class ControleArquivo {
     }
   }
 
-  Future<File> writeCounter(String filename, String id) async {
+  Future<File> overWrite(String filename, String id) async {
+    final file = await _localFile(filename);
+
+    // Write the file
+    return file.writeAsString(id, mode: FileMode.write);
+  }
+
+  Future<File> writeAdd(String filename, String id) async {
     final file = await _localFile(filename);
 
     // Write the file

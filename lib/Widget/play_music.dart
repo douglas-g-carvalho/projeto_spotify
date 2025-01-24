@@ -187,7 +187,7 @@ class _PlayMusicState extends State<PlayMusic> {
                                       height:
                                           (size.width + size.height) * 0.065,
                                       child: const CircularProgressIndicator(
-                                        color: Colors.green,
+                                        color: Constants.color,
                                       ),
                                     ),
                                   ),
@@ -233,7 +233,7 @@ class _PlayMusicState extends State<PlayMusic> {
                                     : Icons.repeat,
                                 size: width * 0.11,
                                 color: musicPlayer.repeat
-                                    ? Colors.green
+                                    ? Constants.color
                                     : Colors.white,
                               ),
                             ),
@@ -246,7 +246,7 @@ class _PlayMusicState extends State<PlayMusic> {
                                 Icons.shuffle,
                                 size: width * 0.11,
                                 color: musicPlayer.shuffle
-                                    ? Colors.green
+                                    ? Constants.color
                                     : Colors.white,
                               ),
                             ),
