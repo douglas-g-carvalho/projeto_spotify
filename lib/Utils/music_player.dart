@@ -28,6 +28,8 @@ class MusicPlayer extends ChangeNotifier {
 
   int newSong = 0;
 
+  int repeatType = 0;
+
   bool repeat = false;
   bool shuffle = false;
   bool autoPlay = false;
@@ -55,36 +57,30 @@ class MusicPlayer extends ChangeNotifier {
         builder: (context, data) {
           musica = data.data ?? Duration.zero;
 
-          if (shuffle) {
+          if (shuffle || autoPlay) {
             minDuration = const Duration(milliseconds: 1);
           } else {
             minDuration = Duration.zero;
           }
 
-          if (musicaCompletada() && repeat) {
-            player.seek(Duration.zero);
-          }
+          if (musicaCompletada()) {
+            if (repeat) {
+              player.seek(Duration.zero);
+            } else if (shuffle) {
+              provisorio().then((value) => loadingMaster(true));
 
-          if (musicaCompletada() && autoPlay && !shuffle && !repeat) {
-            provisorio().then((value) => loadingMaster(true));
+              shuffleOn().then((value) {
+                loadingMaster(false);
+              });
+            } else if (autoPlay) {
+              provisorio().then((value) => loadingMaster(true));
 
-            autoPlayOn().then((value) {
-              player.play();
-              loadingMaster(false);
-            });
-          }
-
-          if (musicaCompletada() && shuffle && !repeat) {
-            provisorio().then((value) => loadingMaster(true));
-
-            shuffleOn().then((value) {
-              player.play();
-              loadingMaster(false);
-            });
-          }
-
-          if (musicaCompletada() && player.playing && !repeat && !autoPlay) {
-            player.pause().then((value) => loadingMaster(false));
+              autoPlayOn().then((value) {
+                loadingMaster(false);
+              });
+            } else if (player.playing) {
+              player.pause().then((value) => loadingMaster(false));
+            }
           }
 
           return ProgressBar(
@@ -128,9 +124,9 @@ class MusicPlayer extends ChangeNotifier {
       songIndex = 0;
     }
 
-    await changeMusic().then((value) {
-      player.pause();
-      player.seek(Duration.zero);
+    await changeMusic().then((value) async {
+      await player.seek(Duration.zero);
+      player.play();
     });
   }
 
@@ -146,14 +142,14 @@ class MusicPlayer extends ChangeNotifier {
   Future<void> shuffleOn() async {
     int newMusic = Random().nextInt(songList.length);
 
-    if (newMusic == songIndex) {
+    while (newMusic == songIndex) {
       newMusic = Random().nextInt(songList.length);
     }
     songIndex = newMusic;
 
-    await changeMusic().then((value) {
-      player.pause();
-      player.seek(Duration.zero);
+    await changeMusic().then((value) async {
+      await player.seek(Duration.zero);
+      player.play();
     });
   }
 

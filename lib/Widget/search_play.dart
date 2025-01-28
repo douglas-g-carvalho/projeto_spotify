@@ -216,7 +216,7 @@ class _SearchPlayState extends State<SearchPlay> {
                     setState(() {});
                   },
                   child: Icon(
-                    Icons.loop,
+                    musicPlayer.repeat ? Icons.repeat_one : Icons.repeat,
                     size: width * 0.12,
                     color: musicPlayer.repeat ? Constants.color : Colors.white,
                   ),

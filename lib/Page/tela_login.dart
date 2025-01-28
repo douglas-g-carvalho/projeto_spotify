@@ -75,6 +75,7 @@ class _TelaLoginState extends State<TelaLogin> {
 
   Widget textFieldEmailSenha({
     required TextEditingController controller,
+    TextInputType? keyboardType,
     required String? errorText,
     required String hint,
     required Size size,
@@ -96,7 +97,7 @@ class _TelaLoginState extends State<TelaLogin> {
         ),
         autovalidateMode: AutovalidateMode.onUserInteraction,
         cursorColor: Colors.white,
-        keyboardType: TextInputType.text,
+        keyboardType: keyboardType ?? TextInputType.text,
         controller: controller,
       ),
     );
@@ -226,6 +227,7 @@ class _TelaLoginState extends State<TelaLogin> {
                     // Email
                     textFieldEmailSenha(
                       controller: controllerEmail,
+                      keyboardType: TextInputType.emailAddress,
                       errorText: errorEmail,
                       hint: 'Email',
                       size: size,

@@ -227,20 +227,36 @@ class _PlayMusicState extends State<PlayMusic> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             TextButton(
-                              onPressed: () {
-                                setState(() =>
-                                    musicPlayer.repeat = !musicPlayer.repeat);
-                              },
-                              child: Icon(
-                                musicPlayer.repeat
-                                    ? Icons.repeat_one
-                                    : Icons.repeat,
-                                size: width * 0.11,
-                                color: musicPlayer.repeat
-                                    ? Constants.color
-                                    : Colors.white,
-                              ),
-                            ),
+                  onPressed: () {
+                    switch (musicPlayer.repeatType) {
+                      case 0:
+                        musicPlayer.autoPlay = true;
+                        musicPlayer.repeatType += 1;
+                      case 1:
+                        musicPlayer.repeat = true;
+                        musicPlayer.autoPlay = false;
+                        musicPlayer.repeatType += 1;
+                      case 2:
+                        musicPlayer.repeat = false;
+                        musicPlayer.repeatType = 0;
+                    }
+
+                    setState(() {});
+                  },
+                  child: Icon(
+                    musicPlayer.repeatType == 0
+                        ? Icons.repeat
+                        : musicPlayer.repeatType == 1
+                            ? Icons.repeat
+                            : Icons.repeat_one,
+                    size: width * 0.11,
+                    color: musicPlayer.repeatType == 0
+                        ? Colors.white
+                        : musicPlayer.repeatType == 1
+                            ? Constants.color
+                            : Constants.color,
+                  ),
+                ),
                             TextButton(
                               onPressed: () {
                                 setState(() =>
