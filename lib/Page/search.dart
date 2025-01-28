@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:just_audio/just_audio.dart';
-import 'package:projeto_spotify/Models/search_model.dart';
 import 'package:projeto_spotify/Widget/search_play.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
@@ -16,20 +14,12 @@ class Search extends StatefulWidget {
 }
 
 class _SearchState extends State<Search> {
-  SearchModel searchModel = SearchModel(
-    id: [],
-    title: [],
-    author: [],
-    viewCount: [],
-    uploadDate: [],
-    uploadDateRaw: [],
-    duration: [],
-    urlSound: [],
-  );
+  Map<int, Map<String, Object>> mapSearch = {};
 
   late TextEditingController controller;
-  String textSearch = '';
+
   bool loading = false;
+  bool searchAlready = false;
 
   String customizedViewCount(int views) {
     String divider = '1';
@@ -69,7 +59,7 @@ class _SearchState extends State<Search> {
   }
 
   String customizedDuration(Duration duration) {
-    int second = duration.inSeconds;
+    int second = duration.inSeconds - 1;
     int minute = 0;
     int hour = 0;
 
@@ -100,7 +90,18 @@ class _SearchState extends State<Search> {
     return hourString + minutesString + secondsString;
   }
 
-  String customizedDataAgo(String uploadDateRaw) {
+  String customizedUploadDate(DateTime? uploadDate) {
+    if (uploadDate == null) {
+      return '- Sem data';
+    }
+    return '- ${uploadDate.day}/${uploadDate.month}/${uploadDate.year}';
+  }
+
+  String customizedDataAgo(String? uploadDateRaw) {
+    if (uploadDateRaw == null) {
+      return '';
+    }
+
     Map<String, String> correction = {
       'years': 'anos',
       'year': 'ano',
@@ -127,6 +128,28 @@ class _SearchState extends State<Search> {
       newText = 'Transmitido ${newText.replaceAll('Streamed ', '')}';
     }
     return newText;
+  }
+
+  Future<void> searchVideos(VideoSearchList video) async {
+    for (int index = 0; index < video.length; index++) {
+      try {
+        mapSearch.addAll({
+          index: {
+            'ID': video[index].id,
+            'Title': video[index].title,
+            'Author': video[index].author,
+            'Views': customizedViewCount(video[index].engagement.viewCount),
+            'UploadDate': video[index].uploadDate ?? 'Sem data',
+            'UploadDateString': customizedUploadDate(video[index].uploadDate),
+            'UploadDateRaw': customizedDataAgo(video[index].uploadDateRaw),
+            'Duration': customizedDuration(video[index].duration!),
+          }
+        });
+      } catch (error) {
+        continue;
+      }
+    }
+    setState(() => loading = false);
   }
 
   @override
@@ -191,93 +214,22 @@ class _SearchState extends State<Search> {
                         controller: controller,
                         onSubmitted: (String value) async {
                           if (value != '') {
-                            if (searchModel.id!.isNotEmpty) {
-                              searchModel.id = [];
-                              searchModel.title = [];
-                              searchModel.author = [];
-                              searchModel.viewCount = [];
-                              searchModel.uploadDate = [];
-                              searchModel.uploadDateRaw = [];
-                              searchModel.duration = [];
-                              searchModel.urlSound = [];
+                            if (mapSearch.isNotEmpty) {
+                              setState(() => mapSearch = {});
                             }
-                            setState(() => loading = true);
-                            final yt = YoutubeExplode();
 
-                            final video = (await yt.search
+                            setState(() => loading = true);
+
+                            final video = (await YoutubeExplode()
+                                .search
                                 .search(value, filter: TypeFilters.video));
 
-                            for (int index = 0; index < video.length; index++) {
-                              int maybeError = 0;
-                              try {
-                                maybeError += 1;
-                                searchModel.id!.add(video[index].id.value);
-                                maybeError += 1;
-                                searchModel.title!.add(video[index].title);
-                                maybeError += 1;
-                                searchModel.author!.add(video[index].author);
-
-                                maybeError += 1;
-                                searchModel.viewCount!.add(customizedViewCount(
-                                    video[index].engagement.viewCount));
-
-                                maybeError += 1;
-                                searchModel.uploadDate!
-                                    .add(video[index].uploadDate!);
-
-                                maybeError += 1;
-                                searchModel.uploadDateRaw!.add(
-                                    customizedDataAgo(
-                                        video[index].uploadDateRaw!));
-
-                                maybeError += 1;
-                                searchModel.duration!.add(
-                                    customizedDuration(video[index].duration!));
-
-                                maybeError += 1;
-                                var manifest = await yt.videos.streamsClient
-                                    .getManifest(video[index].id.value);
-                                var audioUrl = manifest.audioOnly.last.url;
-
-                                searchModel.urlSound!
-                                    .add(AudioSource.uri(audioUrl));
-                              } catch (error) {
-                                for (int errors = 0;
-                                    errors != maybeError - 1;
-                                    errors++) {
-                                  switch (errors) {
-                                    case 0:
-                                      searchModel.id!
-                                          .remove(video[index].id.value);
-                                    case 1:
-                                      searchModel.title!
-                                          .remove(video[index].title);
-                                    case 2:
-                                      searchModel.author!
-                                          .remove(video[index].author);
-                                    case 3:
-                                      searchModel.viewCount!.remove(
-                                          customizedViewCount(video[index]
-                                              .engagement
-                                              .viewCount));
-                                    case 4:
-                                      searchModel.uploadDate!
-                                          .remove(video[index].uploadDate);
-                                    case 5:
-                                      searchModel.uploadDateRaw!.remove(
-                                          customizedDataAgo(
-                                              video[index].uploadDateRaw!));
-                                    case 6:
-                                      searchModel.duration!.remove(
-                                          customizedDuration(
-                                              video[index].duration!));
-                                  }
-                                }
-                              }
-                              if (searchModel.id!.isNotEmpty) {
-                                setState(() => loading = false);
-                                setState(() {});
-                              }
+                            try {
+                              searchVideos(video);
+                            } catch (error) {
+                              setState(() {
+                                mapSearch = {};
+                              });
                             }
                           }
                         },
@@ -285,13 +237,13 @@ class _SearchState extends State<Search> {
                     ),
                   ],
                 ),
-                if (searchModel.id!.isNotEmpty)
+                if (mapSearch.isNotEmpty)
                   SingleChildScrollView(
                     child: SizedBox(
                       width: width,
                       height: height * 0.83,
                       child: ListView.separated(
-                        itemCount: searchModel.id!.length - 1,
+                        itemCount: mapSearch.length - 1,
                         separatorBuilder: (context, index) =>
                             SizedBox(height: height * 0.01),
                         itemBuilder: (context, index) {
@@ -307,15 +259,21 @@ class _SearchState extends State<Search> {
                                   context,
                                   MaterialPageRoute(
                                     builder: (_) => SearchPlay(
-                                      title: searchModel.title![index],
-                                      author: searchModel.author![index],
-                                      viewCount: searchModel.viewCount![index],
+                                      id: mapSearch[index]!['ID'] as VideoId,
+                                      title:
+                                          mapSearch[index]!['Title'] as String,
+                                      author:
+                                          mapSearch[index]!['Author'] as String,
+                                      viewCount:
+                                          mapSearch[index]!['Views'] as String,
                                       uploadDate:
-                                          searchModel.uploadDate![index],
+                                          mapSearch[index]!['UploadDateString']
+                                              as String,
                                       uploadDateRaw:
-                                          searchModel.uploadDateRaw![index],
-                                      duration: searchModel.duration![index],
-                                      urlSound: searchModel.urlSound![index],
+                                          mapSearch[index]!['UploadDateRaw']
+                                              as String,
+                                      duration: mapSearch[index]!['Duration']
+                                          as String,
                                     ),
                                   ),
                                 );
@@ -333,7 +291,7 @@ class _SearchState extends State<Search> {
                                         width: width * 0.80,
                                         child: Text(
                                           textAlign: TextAlign.center,
-                                          searchModel.title![index],
+                                          mapSearch[index]!['Title'] as String,
                                           style: const TextStyle(
                                               color: Colors.white),
                                         ),
@@ -343,14 +301,15 @@ class _SearchState extends State<Search> {
                                         children: [
                                           Text(
                                             textAlign: TextAlign.center,
-                                            searchModel.author![index],
+                                            mapSearch[index]!['Author']
+                                                as String,
                                             style: const TextStyle(
                                                 color: Colors.white),
                                           ),
                                           SizedBox(width: width * 0.015),
                                           Text(
                                             textAlign: TextAlign.center,
-                                            '${searchModel.uploadDate![index].day}/${searchModel.uploadDate![index].month}/${searchModel.uploadDate![index].year}',
+                                            '${mapSearch[index]!['UploadDateString']}',
                                             style: const TextStyle(
                                                 color: Colors.white),
                                           ),
@@ -367,14 +326,15 @@ class _SearchState extends State<Search> {
                                           SizedBox(width: width * 0.01),
                                           Text(
                                             textAlign: TextAlign.center,
-                                            searchModel.viewCount![index],
+                                            mapSearch[index]!['Views']
+                                                as String,
                                             style: const TextStyle(
                                                 color: Colors.white),
                                           ),
                                           SizedBox(width: width * 0.01),
                                           Text(
                                             textAlign: TextAlign.center,
-                                            '- Duração: ${searchModel.duration![index]}',
+                                            '- Duração: ${mapSearch[index]!['Duration']}',
                                             style: const TextStyle(
                                                 color: Colors.white),
                                           ),
@@ -390,8 +350,7 @@ class _SearchState extends State<Search> {
                       ),
                     ),
                   ),
-                if (loading)
-                  LoadScreen().loadingNormal(size)
+                if (loading) LoadScreen().loadingNormal(size)
               ],
             ),
           ),

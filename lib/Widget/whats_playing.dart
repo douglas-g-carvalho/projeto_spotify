@@ -31,6 +31,8 @@ class WhatsPlaying extends StatefulWidget {
 }
 
 class _WhatsPlayingState extends State<WhatsPlaying> {
+  int option = 0;
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -67,15 +69,33 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                 ),
                 TextButton(
                   onPressed: () {
-                    widget.musicPlayer.repeat = !widget.musicPlayer.repeat;
+                    switch (option) {
+                      case 0:
+                        widget.musicPlayer.autoPlay = true;
+                        option += 1;
+                      case 1:
+                        widget.musicPlayer.repeat = true;
+                        widget.musicPlayer.autoPlay = false;
+                        option += 1;
+                      case 2:
+                        widget.musicPlayer.repeat = false;
+                        option = 0;
+                    }
+
                     setState(() {});
                   },
                   child: Icon(
-                    widget.musicPlayer.repeat ? Icons.repeat_one : Icons.repeat,
+                    option == 0
+                        ? Icons.repeat
+                        : option == 1
+                            ? Icons.repeat
+                            : Icons.repeat_one,
                     size: width * 0.078,
-                    color: widget.musicPlayer.repeat
-                        ? Constants.color
-                        : Colors.white,
+                    color: option == 0
+                        ? Colors.white
+                        : option == 1
+                            ? Constants.color
+                            : Constants.color,
                   ),
                 ),
                 TextButton(
@@ -149,7 +169,9 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                           ),
                     TextButton(
                         style: ElevatedButton.styleFrom(
-                          splashFactory: widget.loading ? NoSplash.splashFactory : InkSplash.splashFactory,
+                          splashFactory: widget.loading
+                              ? NoSplash.splashFactory
+                              : InkSplash.splashFactory,
                           minimumSize: Size(0.1, 0.1),
                         ),
                         onPressed: () {

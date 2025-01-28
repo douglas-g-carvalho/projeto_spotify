@@ -1,28 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 
 import 'package:projeto_spotify/Utils/music_player.dart';
-import 'package:just_audio/just_audio.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 import '../Utils/constants.dart';
 
 class SearchPlay extends StatefulWidget {
+  final VideoId id;
   final String title;
   final String author;
   final String viewCount;
-  final DateTime uploadDate;
+  final String uploadDate;
   final String uploadDateRaw;
   final String duration;
-  final AudioSource urlSound;
 
   const SearchPlay({
     super.key,
+    required this.id,
     required this.title,
     required this.author,
     required this.viewCount,
     required this.uploadDate,
     required this.uploadDateRaw,
     required this.duration,
-    required this.urlSound,
   });
 
   @override
@@ -32,6 +33,8 @@ class SearchPlay extends StatefulWidget {
 class _SearchPlayState extends State<SearchPlay> {
   MusicPlayer musicPlayer = MusicPlayer();
   bool loading = false;
+
+  dynamic audioUrl;
 
   loadingMaster(bool value) {
     setState(() => loading = value);
@@ -60,6 +63,16 @@ class _SearchPlayState extends State<SearchPlay> {
             seconds: int.parse('${durationString[2]}${durationString[3]}'));
       case _:
         return const Duration(seconds: 0);
+    }
+  }
+
+  Future<void> audioIsOn() async {
+    if (audioUrl == null) {
+      var manifest =
+          await YoutubeExplode().videos.streamsClient.getManifest(widget.id);
+      audioUrl = manifest.audioOnly.last.url;
+
+      await musicPlayer.player.setAudioSource(AudioSource.uri(audioUrl));
     }
   }
 
@@ -94,47 +107,50 @@ class _SearchPlayState extends State<SearchPlay> {
       body: Center(
         child: Column(
           children: [
+            if (widget.uploadDate == '- Sem data')
+              SizedBox(height: height * 0.001),
             Icon(
               Icons.music_video,
-              size: width * 0.50,
+              size: width * 0.75,
               color: Colors.white,
             ),
-            Text(
-              widget.title,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: width * 0.05,
+            SizedBox(
+              width: width * 0.90,
+              child: Text(
+                widget.title,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: width * 0.065,
+                ),
               ),
             ),
             SizedBox(height: height * 0.01),
             Text(
               textAlign: TextAlign.center,
               widget.viewCount,
-              style: TextStyle(
-                  color: Constants.color,
-                  fontSize: width * 0.045),
+              style: TextStyle(color: Constants.color, fontSize: width * 0.06),
             ),
             SizedBox(height: height * 0.01),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  textAlign: TextAlign.center,
-                  widget.uploadDateRaw,
-                  style: TextStyle(
-                      color: Constants.color,
-                      fontSize: width * 0.045),
-                ),
-                Text(
-                  textAlign: TextAlign.center,
-                  '- ${widget.uploadDate.day}/${widget.uploadDate.month}/${widget.uploadDate.year}',
-                  style: TextStyle(
-                      color: const Color.fromARGB(255, 112, 231, 114),
-                      fontSize: width * 0.045),
-                ),
-              ],
-            ),
+            if (widget.uploadDate != '- Sem data')
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    textAlign: TextAlign.center,
+                    widget.uploadDateRaw,
+                    style: TextStyle(
+                        color: Constants.color, fontSize: width * 0.06),
+                  ),
+                  Text(
+                    textAlign: TextAlign.center,
+                    widget.uploadDate,
+                    style: TextStyle(
+                        color: Constants.color, fontSize: width * 0.06),
+                  ),
+                ],
+              ),
             SizedBox(height: height * 0.01),
             musicPlayer.progressBar(
               width * 0.80,
@@ -155,10 +171,8 @@ class _SearchPlayState extends State<SearchPlay> {
                 ),
                 TextButton(
                   onPressed: () async {
-                    if (musicPlayer.player.currentIndex == null) {
-                      setState(() => loading = true);
-                      await musicPlayer.player.setAudioSource(widget.urlSound);
-                    }
+                    setState(() => loading = true);
+                    await audioIsOn();
 
                     if (musicPlayer.musicaCompletada()) {
                       musicPlayer.player.seek(Duration.zero);

@@ -6,6 +6,7 @@ import 'package:projeto_spotify/Utils/controle_arquivo.dart';
 import 'package:spotify/spotify.dart';
 import 'package:projeto_spotify/Utils/constants.dart';
 
+import '../Utils/database.dart';
 import '../Utils/groups.dart';
 import '../Utils/load_screen.dart';
 
@@ -53,7 +54,8 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
   final storage = ControleArquivo();
 
   late TextEditingController controller;
-  String textSearch = '';
+
+  dynamic databaseBackup = {};
 
   Widget rowText(String file, Size size, int index) {
     Set<Map<String, String>> name = {};
@@ -191,6 +193,7 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                       });
 
                       Navigator.of(context).pop();
+                      controller.text = '';
                     } catch (error) {
                       // caso não encontre a playlist volta para o textField.
                     }
@@ -238,48 +241,54 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                     barrierColor: Colors.black.withOpacity(0.5),
                     builder: (ctx) {
                       return AlertDialog(
+                        title: Text(
+                          'escolha qual deseja restaurar',
+                          style: TextStyle(fontSize: size.width * 0.050),
+                        ),
                         actions: [
-                          SizedBox(
-                            height: size.height * 0.01,
-                            child: const Placeholder(
-                              color: Colors.transparent,
-                            ),
-                          ),
-                          Text(
-                            'escolha qual deseja restaurar',
-                            style: TextStyle(fontSize: size.width * 0.050),
-                          ),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
                               TextButton(
-                                onPressed: () {
+                                onPressed: () async {
                                   LoadScreen().loadingScreen(context);
 
-                                  storage.delete('list').then((value) {
-                                    storage
-                                        .writeAdd(
-                                      'list',
-                                      '6AsR0V6KWciPEVnZfIFKnX-/-2AltltuDppkFyGloecxjzs-/-6bpPKPIWEPnvLmqRc7GLzw-/-08eJerYHHTin58iXQjQHpK-/-5tEzEAdmKqsugZxOq9YajR-/-60egqvG5M5ilZM8Js4hCkG-/-7234K2ZNVmAfetWuSguT7V-/-0Mgok0vqQjNAsLV5WyJvAq',
-                                    )
-                                        .then((value) {
-                                      storage.readCounter('list').then((value) {
-                                        widget.group.list = value;
-                                        widget.group.listMap = {};
-
-                                        getNameFromSpotify(
-                                          widget.group.list,
-                                          widget.group.listMap,
-                                        ).then((value) {
-                                          setState(() =>
-                                              widget.group.listMap = value);
-
-                                          Navigator.of(context).pop();
-                                          Navigator.of(context).pop();
-                                        });
-                                      });
-                                    });
+                                  await Database()
+                                      .updateDataBase()
+                                      .get()
+                                      .then((value) {
+                                    databaseBackup = value.value!;
                                   });
+
+                                  await storage
+                                      .delete('list')
+                                      .then((value) async {
+                                    try {
+                                      await ControleArquivo().writeAdd(
+                                          'list', databaseBackup['Lista']);
+
+                                      await ControleArquivo()
+                                          .readCounter('list')
+                                          .then((value) {
+                                        widget.group.list = value;
+                                      });
+
+                                      await getNameFromSpotify(
+                                              widget.group.get('list'), {})
+                                          .then((value) {
+                                        widget.group.listMap = value;
+
+                                        setState(() {});
+                                      });
+                                    } catch (error) {
+                                      // caso não encontre a playlist volta para o textField.
+                                    }
+                                  });
+
+                                  if (context.mounted) {
+                                    Navigator.of(context).pop();
+                                    Navigator.of(context).pop();
+                                  }
                                 },
                                 child: Text(
                                   'Lista',
@@ -287,35 +296,45 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                                 ),
                               ),
                               TextButton(
-                                onPressed: () {
+                                onPressed: () async {
                                   LoadScreen().loadingScreen(context);
 
-                                  storage.delete('mixes').then((value) {
-                                    storage
-                                        .writeAdd(
-                                      'mixes',
-                                      '6G4O7YRLjTk4T4VPa4fDAM-/-7w13RcdObCa0WvQrjVJDfp-/-5z2dTZUjDD90wM4Z9youwS',
-                                    )
-                                        .then((value) {
-                                      storage
+                                  await Database()
+                                      .updateDataBase()
+                                      .get()
+                                      .then((value) {
+                                    databaseBackup = value.value!;
+                                  });
+
+                                  await storage
+                                      .delete('mixes')
+                                      .then((value) async {
+                                    try {
+                                      await ControleArquivo().writeAdd(
+                                          'mixes', databaseBackup['Mixes']);
+
+                                      await ControleArquivo()
                                           .readCounter('mixes')
                                           .then((value) {
                                         widget.group.mixes = value;
-                                        widget.group.mixesMap = {};
-
-                                        getNameFromSpotify(
-                                          widget.group.mixes,
-                                          widget.group.mixesMap,
-                                        ).then((value) {
-                                          setState(() =>
-                                              widget.group.mixesMap = value);
-
-                                          Navigator.of(context).pop();
-                                          Navigator.of(context).pop();
-                                        });
                                       });
-                                    });
+
+                                      await getNameFromSpotify(
+                                              widget.group.get('mixes'), {})
+                                          .then((value) {
+                                        widget.group.mixesMap = value;
+
+                                        setState(() {});
+                                      });
+                                    } catch (error) {
+                                      // caso não encontre a playlist volta para o textField.
+                                    }
                                   });
+
+                                  if (context.mounted) {
+                                    Navigator.of(context).pop();
+                                    Navigator.of(context).pop();
+                                  }
                                 },
                                 child: Text(
                                   'Mixes',

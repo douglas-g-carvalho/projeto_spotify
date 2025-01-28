@@ -156,17 +156,21 @@ class _PlayMusicState extends State<PlayMusic> {
                                   onPressed: () async {
                                     setState(() => loading = true);
 
-                                    await musicPlayer.changeMusic();
+                                    try {
+                                      await musicPlayer.changeMusic();
 
-                                    if (musicPlayer.musicaCompletada()) {
-                                      musicPlayer.player.seek(Duration.zero);
-                                    }
-                                    setState(() =>
-                                        musicPlayer.musica = Duration.zero);
+                                      if (musicPlayer.musicaCompletada()) {
+                                        musicPlayer.player.seek(Duration.zero);
+                                      }
+                                      setState(() =>
+                                          musicPlayer.musica = Duration.zero);
 
-                                    await musicPlayer.play().then((value) {
+                                      await musicPlayer.play().then((value) {
+                                        setState(() => loading = false);
+                                      });
+                                    } catch (error) {
                                       setState(() => loading = false);
-                                    });
+                                    }
                                   },
                                   child: Icon(
                                     musicPlayer.player.playing

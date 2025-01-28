@@ -26,8 +26,11 @@ class MusicPlayer extends ChangeNotifier {
 
   int songIndex = 0;
 
+  int newSong = 0;
+
   bool repeat = false;
   bool shuffle = false;
+  bool autoPlay = false;
 
   final player = AudioPlayer();
 
@@ -62,6 +65,15 @@ class MusicPlayer extends ChangeNotifier {
             player.seek(Duration.zero);
           }
 
+          if (musicaCompletada() && autoPlay && !shuffle && !repeat) {
+            provisorio().then((value) => loadingMaster(true));
+
+            autoPlayOn().then((value) {
+              player.play();
+              loadingMaster(false);
+            });
+          }
+
           if (musicaCompletada() && shuffle && !repeat) {
             provisorio().then((value) => loadingMaster(true));
 
@@ -71,7 +83,7 @@ class MusicPlayer extends ChangeNotifier {
             });
           }
 
-          if (musicaCompletada() && player.playing && !repeat) {
+          if (musicaCompletada() && player.playing && !repeat && !autoPlay) {
             player.pause().then((value) => loadingMaster(false));
           }
 
@@ -109,6 +121,19 @@ class MusicPlayer extends ChangeNotifier {
     }
   }
 
+  Future<void> autoPlayOn() async {
+    if (songIndex < songList.length - 1) {
+      songIndex += 1;
+    } else {
+      songIndex = 0;
+    }
+
+    await changeMusic().then((value) {
+      player.pause();
+      player.seek(Duration.zero);
+    });
+  }
+
   bool musicaCompletada() {
     if (mapDuration[songList.elementAt(songIndex)] != null) {
       return musica.inSeconds ==
@@ -140,28 +165,33 @@ class MusicPlayer extends ChangeNotifier {
 
     int indexVideos = 0;
     final yt = YoutubeExplode();
-    for (int index = 0; index < 20; index++) {
-      final video = (await yt.search
-          .search("$musicName $nameArtist música"))[indexVideos];
 
-      if (video.duration == null) {
-        indexVideos++;
-        continue;
+    while (true) {
+      try {
+        final video = (await yt.search
+            .search("$musicName $nameArtist música"))[indexVideos];
+
+        if (video.duration == null) {
+          indexVideos++;
+          continue;
+        }
+        if (video.duration! > const Duration(minutes: 20)) {
+          indexVideos++;
+          continue;
+        }
+
+        final videoId = video.id.value;
+        mapDuration.addAll({musicName: video.duration!});
+
+        var manifest = await yt.videos.streamsClient.getManifest(videoId);
+        var audioUrl = manifest.audioOnly.last.url;
+
+        mapSongURL.addAll({musicName: AudioSource.uri(audioUrl)});
+        break;
+      } catch (error) {
+        List<String> separado = nameArtist.split(',');
+        nameArtist = separado[0];
       }
-
-      if (video.duration! > const Duration(minutes: 20)) {
-        indexVideos++;
-        continue;
-      }
-
-      final videoId = video.id.value;
-      mapDuration.addAll({musicName: video.duration!});
-
-      var manifest = await yt.videos.streamsClient.getManifest(videoId);
-      var audioUrl = manifest.audioOnly.last.url;
-
-      mapSongURL.addAll({musicName: AudioSource.uri(audioUrl)});
-      break;
     }
     await setAudioSource(musicName);
     notifyListeners();

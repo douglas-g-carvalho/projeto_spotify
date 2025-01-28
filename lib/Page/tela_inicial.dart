@@ -83,6 +83,9 @@ class _TelaInicialState extends State<TelaInicial> {
   }
 
   Future<void> loadAllSaved() async {
+    backupList = widget.group.list;
+    backupMixes = widget.group.mixes;
+
     mapListMusics = widget.group.listMap;
     mapMixesInfo = widget.group.mixesMap;
 
@@ -129,30 +132,34 @@ class _TelaInicialState extends State<TelaInicial> {
                   LoadScreen().loadingScreen(context);
                 }
 
+                bool loadAgain = false;
+
                 if (widget.group.get('list').length != backupList.length) {
                   await updateMap('list');
                   backupList = widget.group.get('list');
+                  loadAgain = true;
                 }
 
                 if (widget.group.get('mixes').length != backupMixes.length) {
                   await updateMap('mixes');
                   backupMixes = widget.group.get('mixes');
+                  loadAgain = true;
                 }
 
-                String lista = await ControleArquivo().getFile('list');
-                String mixes = await ControleArquivo().getFile('mixes');
+                if (loadAgain) {
+                  String lista = await ControleArquivo().getFile('list');
+                  String mixes = await ControleArquivo().getFile('mixes');
 
-                Database().updateDataBase().update({
-                  'Apelido': widget.group.apelido,
-                  'Lista': lista,
-                  'Mixes': mixes,
-                });
+                  Database().updateDataBase().update({
+                    'Apelido': widget.group.apelido,
+                    'Lista': lista,
+                    'Mixes': mixes,
+                  });
+                }
 
                 if (context.mounted) {
-                  Navigator.of(context).pop();
+                  Navigator.of(context).pushNamed('/inicio');
                 }
-
-                setState(() {});
               });
             }
           },
@@ -167,16 +174,67 @@ class _TelaInicialState extends State<TelaInicial> {
           TextButton(
               onPressed: () {
                 if (isLoading.length == 2) {
-                  Navigator.of(context).pushNamed('/');
+                  showDialog(
+                      context: context,
+                      builder: (ctx) {
+                        return AlertDialog(
+                          title: Text(
+                            'Tem certeza?',
+                            style: TextStyle(fontSize: size.height * 0.03),
+                            textAlign: TextAlign.center,
+                          ),
+                          actions: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pushNamed('/');
+                                    },
+                                    child: Text(
+                                      'Sim',
+                                      style: TextStyle(
+                                        fontSize: size.height * 0.025,
+                                        color: Constants.color,
+                                      ),
+                                    )),
+                                TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: Text(
+                                      'Não',
+                                      style: TextStyle(
+                                        fontSize: size.height * 0.025,
+                                        color: Constants.color,
+                                      ),
+                                    )),
+                              ],
+                            ),
+                          ],
+                        );
+                      });
                 }
               },
-              child: Icon(
-                Icons.account_circle,
-                size: size.height * 0.04,
-                color: isLoading.length != 2
-                    ? Constants.color.withOpacity(0.5)
-                    : Constants.color,
-              )),
+              child:
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Text(
+                  'Deslogar ',
+                  style: TextStyle(
+                    fontSize: size.height * 0.018,
+                    color: isLoading.length != 2
+                        ? Constants.color.withOpacity(0.5)
+                        : Constants.color,
+                  ),
+                ),
+                Icon(
+                  Icons.logout,
+                
+                  color: isLoading.length != 2
+                      ? Constants.color.withOpacity(0.5)
+                      : Constants.color,
+                ),
+              ])),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
