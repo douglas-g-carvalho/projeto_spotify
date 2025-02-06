@@ -12,6 +12,7 @@ import '../Utils/groups.dart';
 
 import '../Widget/list_music.dart';
 
+// Classe que serve como Tela Principal.
 class TelaInicial extends StatefulWidget {
   final Groups group;
 
@@ -25,14 +26,18 @@ class TelaInicial extends StatefulWidget {
 }
 
 class _TelaInicialState extends State<TelaInicial> {
+  // Backup dos IDs.
   List<String> backupList = [];
   List<String> backupMixes = [];
 
+  // Map com informações das Músicas.
   Set<Map<String, String>> mapListMusics = {};
   Set<Map<String, String>> mapMixesInfo = {};
 
+  // Set para saber se carregou tudo ou não.
   Set<String> isLoading = {};
 
+  // Atualiza o Map com informações da nova Lista/Mixes.
   Future<void> updateMap(String file) async {
     await widget.group.loadMap(file);
 
@@ -44,6 +49,7 @@ class _TelaInicialState extends State<TelaInicial> {
     }
   }
 
+  // Pega os dados do Firebase e atualiza os arquivos salvos no cache.
   Future<void> loadFiles() async {
     try {
       widget.group.token = FirebaseAuth.instance.currentUser!.uid;
@@ -82,6 +88,7 @@ class _TelaInicialState extends State<TelaInicial> {
     }
   }
 
+  // Atualiza os Backups e Maps com os dados que foram salvos.
   Future<void> loadAllSaved() async {
     backupList = widget.group.list;
     backupMixes = widget.group.mixes;
@@ -97,11 +104,14 @@ class _TelaInicialState extends State<TelaInicial> {
   void initState() {
     super.initState();
 
+    // Caso o usuário seja diferente.
     if (widget.group.token != FirebaseAuth.instance.currentUser!.uid) {
+      // Explicação se encontra na Função.
       loadFiles().then((value) {
         setState(() {});
       });
     } else {
+      // Explicação se encontra na Função.
       loadAllSaved().then((value) {
         setState(() {});
       });
@@ -110,6 +120,7 @@ class _TelaInicialState extends State<TelaInicial> {
 
   @override
   Widget build(BuildContext context) {
+    // Pega o tamanho da tela e armazena.
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
@@ -122,6 +133,7 @@ class _TelaInicialState extends State<TelaInicial> {
         leading: TextButton(
           onPressed: () {
             if (isLoading.length == 2) {
+              // Vai para trocar_playlist.
               Navigator.of(context)
                   .push(MaterialPageRoute(
                       builder: (context) => TrocarPlaylist(
@@ -129,27 +141,35 @@ class _TelaInicialState extends State<TelaInicial> {
                           )))
                   .then((value) async {
                 if (context.mounted) {
+                  // Tela de Carregamento.
                   LoadScreen().loadingScreen(context);
                 }
 
                 bool loadAgain = false;
 
+                // Verifica se a lista foi modificada.
                 if (widget.group.get('list').length != backupList.length) {
+                  // Explicação se encontra na Função.
                   await updateMap('list');
                   backupList = widget.group.get('list');
                   loadAgain = true;
                 }
 
+                // Verifica se o mixes foi modificada.
                 if (widget.group.get('mixes').length != backupMixes.length) {
+                  // Explicação se encontra na Função.
                   await updateMap('mixes');
                   backupMixes = widget.group.get('mixes');
                   loadAgain = true;
                 }
 
+                // Caso lista ou mixes seja modificada.
                 if (loadAgain) {
+                  // Pega a lista e mixes salvado no cache.
                   String lista = await ControleArquivo().getFile('list');
                   String mixes = await ControleArquivo().getFile('mixes');
 
+                  // Faz update nos dados do Firebase.
                   Database().updateDataBase().update({
                     'Apelido': widget.group.apelido,
                     'Lista': lista,
@@ -158,6 +178,7 @@ class _TelaInicialState extends State<TelaInicial> {
                 }
 
                 if (context.mounted) {
+                  // vai para tela_inicial.
                   Navigator.of(context).pushNamed('/inicio');
                 }
               });
@@ -166,14 +187,15 @@ class _TelaInicialState extends State<TelaInicial> {
           child: Icon(
             Icons.add,
             color: isLoading.length != 2
-                ? Constants.color.withOpacity(0.5)
-                : Constants.color,
+                ? Colors.green.withOpacity(0.5)
+                : Colors.green,
           ),
         ),
         actions: [
           TextButton(
               onPressed: () {
                 if (isLoading.length == 2) {
+                  // Aparece um pop-up.
                   showDialog(
                       context: context,
                       builder: (ctx) {
@@ -189,24 +211,26 @@ class _TelaInicialState extends State<TelaInicial> {
                               children: [
                                 TextButton(
                                     onPressed: () {
+                                      // Vai para tela_login.
                                       Navigator.of(context).pushNamed('/');
                                     },
                                     child: Text(
                                       'Sim',
                                       style: TextStyle(
                                         fontSize: size.height * 0.025,
-                                        color: Constants.color,
+                                        color: Colors.green,
                                       ),
                                     )),
                                 TextButton(
                                     onPressed: () {
+                                      // Remove a tela que está no topo.
                                       Navigator.of(context).pop();
                                     },
                                     child: Text(
                                       'Não',
                                       style: TextStyle(
                                         fontSize: size.height * 0.025,
-                                        color: Constants.color,
+                                        color: Colors.red,
                                       ),
                                     )),
                               ],
@@ -223,16 +247,15 @@ class _TelaInicialState extends State<TelaInicial> {
                   style: TextStyle(
                     fontSize: size.height * 0.018,
                     color: isLoading.length != 2
-                        ? Constants.color.withOpacity(0.5)
-                        : Constants.color,
+                        ? Colors.red.withOpacity(0.5)
+                        : Colors.red,
                   ),
                 ),
                 Icon(
                   Icons.logout,
-                
                   color: isLoading.length != 2
-                      ? Constants.color.withOpacity(0.5)
-                      : Constants.color,
+                      ? Colors.red.withOpacity(0.5)
+                      : Colors.red,
                 ),
               ])),
         ],
@@ -276,12 +299,14 @@ class _TelaInicialState extends State<TelaInicial> {
       body: SafeArea(
         child: SingleChildScrollView(
           child: isLoading.length != 2
+              // Tela de Carregamento
               ? LoadScreen().loadingNormal(size)
               : (mapListMusics.isEmpty && mapMixesInfo.isEmpty)
                   ? Center(
                       heightFactor: 2.1,
                       child: Column(
                         children: [
+                          // Coloca o ícone com as cores preto e branco na tela com tamaho especificado e forma oval.
                           SizedBox(
                             height: size.height * 0.30,
                             child: ClipOval(
@@ -292,9 +317,9 @@ class _TelaInicialState extends State<TelaInicial> {
                               ),
                             ),
                           ),
-                          SizedBox(
-                            height: size.height * 0.01,
-                          ),
+                          // Dar um espaço entre os Widget's.
+                          SizedBox(height: size.height * 0.01),
+                          // Texto
                           Text(
                             'Lista e Mixes estão vazias.',
                             style: TextStyle(
@@ -310,10 +335,12 @@ class _TelaInicialState extends State<TelaInicial> {
                         Column(
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
+                            // Classe ListMusic.
                             ListMusic(
                               mapListMusics: mapListMusics,
                               group: widget.group,
                             ),
+                            // Classe MixesMaisOuvidos.
                             MixesMaisOuvidos(
                               group: widget.group,
                               mapMixesInfo: mapMixesInfo,

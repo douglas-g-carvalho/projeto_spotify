@@ -8,8 +8,11 @@ import '../Utils/image_loader.dart';
 import '../Utils/load_screen.dart';
 import '../Utils/constants.dart';
 
+// Classe para tocar as músicas do Mixes.
 class PlaylistStyle extends StatefulWidget {
+  // ID do spotify.
   final String trackId;
+  // Básico da classe.
   const PlaylistStyle({super.key, required this.trackId});
 
   @override
@@ -17,56 +20,73 @@ class PlaylistStyle extends StatefulWidget {
 }
 
 class _PlaylistStyleState extends State<PlaylistStyle> {
+  // Fonte de dados das músicas.
   final musicPlayer = MusicPlayer();
 
+  // Loading para o player.
   bool loading = false;
+  // Para saber quando precisar trocar o SongIndex do MusicPlayer.
   bool otherMusic = false;
-
+  // Para saber quando está tocando música.
   bool isPlaying = false;
 
+  // Função para progressBar conseguir mostrar quando está carregando.
   void loadingMaster(bool value) {
+    // Atualiza a tela e o loading.
     setState(() => loading = value);
   }
 
+  // Quando o play_music for iniciado.
   @override
   void initState() {
+    // Ambos são necessário para conseguir usar a API do Spotify.
     final credentials =
         sptf.SpotifyApiCredentials(Constants.clientId, Constants.clientSecret);
     final spotify = sptf.SpotifyApi(credentials);
 
+    // Pesquisa o ID da playlist e pega seus dados.
     spotify.playlists.get(widget.trackId).then((value) {
+      // Adiciona o nome da Playlist.
       musicPlayer.playlistName.add(value.name!);
+      // Adiciona a imagem da Playlist.
       musicPlayer.artistImage.add(value.images!.first.url!);
-
+      // Pega faz um forEach em cada uma das músicas da Playlist.
       value.tracks?.itemsNative?.forEach((value) {
+        // List com os nomes dos artistas de uma música.
         List<String> saveArtistName = [];
-
+        // Adiciona o nome da música.
         musicPlayer.songList.add(value['track']['name']);
+        // Adiciona a capa da música.
         musicPlayer.imageList.add(value['track']['album']['images'][0]['url']);
-
+        // Faz um forEach para cada artista.
         value['track']['artists'].forEach((artistas) {
+          // Adiciona o nome do artista.
           saveArtistName.add(artistas['name']);
         });
+        // Adiciona os nomes dos artistas.
         musicPlayer.artistName.addAll({value['track']['name']: saveArtistName});
       });
-
-      setState(() {});
-    });
-
+      // Atualiza a tela.
+    }).then((value) => setState(() {}));
     super.initState();
   }
 
+  // Quando for sair do play_music.
   @override
   void dispose() {
+    // Limpa o player quando sair do play_music.
     musicPlayer.player.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final width = size.width;
-    final height = size.height;
+    // Pega o tamanho da tela e armazena.
+    final Size size = MediaQuery.sizeOf(context);
+    // Salva o width.
+    final double width = size.width;
+    // Salva o height.
+    final double height = size.height;
 
     return Scaffold(
       appBar: AppBar(
@@ -80,7 +100,9 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
           ? LoadScreen().loadingNormal(size)
           : Stack(
               children: [
+                // Widger principal do Stack.
                 const SizedBox(height: double.infinity),
+                // ListView com as músicas do Mixes.
                 Container(
                   decoration: const BoxDecoration(color: Colors.black),
                   padding: const EdgeInsets.all(5),
@@ -94,6 +116,7 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                       return musicPlayer.songList.isNotEmpty
                           ? Row(
                               children: [
+                                // Número da Música.
                                 Material(
                                   color: Colors.transparent,
                                   child: Text(
@@ -103,7 +126,9 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                                         fontSize: width * 0.05),
                                   ),
                                 ),
+                                // Dar um espaço entre os Widget's.
                                 SizedBox(width: width * 0.02),
+                                // Capa da música.
                                 SizedBox(
                                   width: width * 0.20,
                                   height: height * 0.10,
@@ -111,10 +136,13 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                                       urlImage: musicPlayer.imageList[index],
                                       size: width * 0.21),
                                 ),
+                                // Dar um espaço entre os Widget's.
                                 SizedBox(width: width * 0.02),
+                                // Nome e Artistas da música.
                                 Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
+                                    // Nome da música.
                                     SizedBox(
                                       width: index < 9
                                           ? width * 0.50
@@ -130,6 +158,7 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                                         ),
                                       ),
                                     ),
+                                    // Nome dos artistas.
                                     SizedBox(
                                       width: index < 9
                                           ? width * 0.50
@@ -150,6 +179,7 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                                     ),
                                   ],
                                 ),
+                                // Botão de Play.
                                 TextButton(
                                   style: ElevatedButton.styleFrom(
                                     shape: const CircleBorder(),
@@ -207,11 +237,14 @@ class _PlaylistStyleState extends State<PlaylistStyle> {
                                 ),
                               ],
                             )
+                            // Placeholder para quando não tiver carregado as músicas.
                           : const Placeholder(color: Colors.transparent);
                     },
                   ),
                 ),
+                // Se estiver tocando.
                 if (isPlaying)
+                // Widget com informações como Capa, Nome, Artista, Barra de Progresso e Botão de Play.
                   Positioned(
                     bottom: 0,
                     child: WhatsPlaying(

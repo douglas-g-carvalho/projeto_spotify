@@ -4,6 +4,7 @@ import 'package:projeto_spotify/Widget/playlist_style.dart';
 import '../Utils/groups.dart';
 import '../Utils/image_loader.dart';
 
+// Classe criada para o usuário selecionar alguma música para escutar do Mixes.
 class MixesMaisOuvidos extends StatefulWidget {
   final Groups group;
   final Set<Map<String, String>> mapMixesInfo;
@@ -21,18 +22,25 @@ class MixesMaisOuvidos extends StatefulWidget {
 class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final width = size.width;
-    final height = size.height;
+    // Pega o tamanho da tela e armazena.
+    final Size size = MediaQuery.sizeOf(context);
+    // Salva o width.
+    final double width = size.width;
+    // Salva o height.
+    final double height = size.height;
 
     return Column(
       children: [
+        // Caso o mapMixesInfo não estiver vazio.
         if (widget.mapMixesInfo.isNotEmpty)
+          // Texto tirado do Spotify.
           Text(
             'Alguns álbuns para você',
             style: TextStyle(color: Colors.white, fontSize: height * 0.03),
           ),
+        // Dar um espaço entre os Widget's.
         const SizedBox(height: 5),
+        // Widget para scrollar entre a lista de músicas do Mixes.
         Container(
           padding: const EdgeInsetsDirectional.symmetric(horizontal: 10),
           width: double.infinity,
@@ -49,6 +57,7 @@ class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
+                    // Imagem da Playlist.
                     SizedBox(
                       width: width * 0.45,
                       height: height * 0.22,
@@ -61,6 +70,7 @@ class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
                             size: width * 0.45),
                       ),
                     ),
+                    // Nome da Playlist.
                     Positioned(
                       top: width * 0.45,
                       left: height * 0.01,
@@ -77,10 +87,13 @@ class _MixesMaisOuvidosState extends State<MixesMaisOuvidos> {
                         ),
                       ),
                     ),
+                    // Hitbox do tamanho exato da Imagem + Nome da Playlist.
                     TextButton(
                       onPressed: () {
+                        // Caso a lista seja diferente de null.
                         if (widget.mapMixesInfo.elementAt(index)['spotify'] !=
                             null) {
+                          // Vai para playlist_style.
                           Navigator.push(
                               context,
                               MaterialPageRoute(

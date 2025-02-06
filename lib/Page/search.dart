@@ -6,6 +6,7 @@ import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import '../Utils/constants.dart';
 import '../Utils/load_screen.dart';
 
+// Classe criada para pesquisar no Youtube.
 class Search extends StatefulWidget {
   const Search({super.key});
 
@@ -14,13 +15,16 @@ class Search extends StatefulWidget {
 }
 
 class _SearchState extends State<Search> {
+  // Map que salva as informações dos vídeos.
   Map<int, Map<String, Object>> mapSearch = {};
 
+  // Controle de Texto para o TextFormField.
   late TextEditingController controller;
 
   bool loading = false;
   bool searchAlready = false;
 
+  // Customiza os Views que nem tem no Youtube.
   String customizedViewCount(int views) {
     String divider = '1';
     int maxZeros;
@@ -58,6 +62,7 @@ class _SearchState extends State<Search> {
         viewName;
   }
 
+  // Customiza a Duração que nem tem no Youtube.
   String customizedDuration(Duration duration) {
     int second = duration.inSeconds - 1;
     int minute = 0;
@@ -90,6 +95,7 @@ class _SearchState extends State<Search> {
     return hourString + minutesString + secondsString;
   }
 
+  // Muda a data do uploadDate para o padrão do Brasil.
   String customizedUploadDate(DateTime? uploadDate) {
     if (uploadDate == null) {
       return '- Sem data';
@@ -97,6 +103,7 @@ class _SearchState extends State<Search> {
     return '- ${uploadDate.day}/${uploadDate.month}/${uploadDate.year}';
   }
 
+  // Traduz os dados do uploadDateRaw recebidos do Youtube.
   String customizedDataAgo(String? uploadDateRaw) {
     if (uploadDateRaw == null) {
       return '';
@@ -130,6 +137,7 @@ class _SearchState extends State<Search> {
     return newText;
   }
 
+  // Procura os videos com base no que foi pesquisado.
   Future<void> searchVideos(VideoSearchList video) async {
     for (int index = 0; index < video.length; index++) {
       try {
@@ -155,9 +163,11 @@ class _SearchState extends State<Search> {
   @override
   void initState() {
     super.initState();
+    // Atribuindo o Editor de Texto.
     controller = TextEditingController();
   }
 
+  // Função do Flutter para quando a Página fechar.
   @override
   void dispose() {
     controller.dispose();
@@ -166,8 +176,11 @@ class _SearchState extends State<Search> {
 
   @override
   Widget build(BuildContext context) {
+    // Pega o tamanho da tela e armazena.
     final size = MediaQuery.of(context).size;
+    // Salva o width.
     final width = size.width;
+    // Salva o height.
     final height = size.height;
 
     return Scaffold(
@@ -200,8 +213,10 @@ class _SearchState extends State<Search> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // Ícone de pesquisa.
                     Icon(Icons.search,
                         color: Colors.white, size: height * 0.05),
+                    // TextField.
                     SizedBox(
                       width: width * 0.80,
                       child: TextField(
@@ -214,19 +229,23 @@ class _SearchState extends State<Search> {
                         controller: controller,
                         onSubmitted: (String value) async {
                           if (value != '') {
+                            // Apaga o mapSearch caso outra pesquisa seja feita.
                             if (mapSearch.isNotEmpty) {
                               setState(() => mapSearch = {});
                             }
 
                             setState(() => loading = true);
 
+                            // Pesquisa no Youtube o que foi digitado.
                             final video = (await YoutubeExplode()
                                 .search
                                 .search(value, filter: TypeFilters.video));
 
                             try {
+                              // Explicação se encontra na Função.
                               searchVideos(video);
                             } catch (error) {
+                              // Reseta o mapSearch.
                               setState(() {
                                 mapSearch = {};
                               });
@@ -237,6 +256,7 @@ class _SearchState extends State<Search> {
                     ),
                   ],
                 ),
+                // ListView com informações do mapSearch.
                 if (mapSearch.isNotEmpty)
                   SingleChildScrollView(
                     child: SizedBox(
@@ -255,6 +275,7 @@ class _SearchState extends State<Search> {
                               style: ElevatedButton.styleFrom(
                                   shape: const RoundedRectangleBorder()),
                               onPressed: () {
+                                // Vai para search_play.
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -280,6 +301,7 @@ class _SearchState extends State<Search> {
                               },
                               child: Row(
                                 children: [
+                                  // Ícone de nota músical.
                                   Icon(
                                     Icons.music_note,
                                     color: Colors.white,
@@ -287,6 +309,7 @@ class _SearchState extends State<Search> {
                                   ),
                                   Column(
                                     children: [
+                                      // Título do video.
                                       SizedBox(
                                         width: width * 0.80,
                                         child: Text(
@@ -296,7 +319,9 @@ class _SearchState extends State<Search> {
                                               color: Colors.white),
                                         ),
                                       ),
+                                      // Dar um espaço entre os Widget's.
                                       SizedBox(height: height * 0.01),
+                                      // Autor e Data.
                                       Row(
                                         children: [
                                           Text(
@@ -315,15 +340,20 @@ class _SearchState extends State<Search> {
                                           ),
                                         ],
                                       ),
+                                      // Dar um espaço entre os Widget's.
                                       SizedBox(height: height * 0.01),
+                                      // Ícone de olho, Contagem das views e a Duração.
                                       Row(
                                         children: [
+                                          // Ícone de olho.
                                           Icon(
                                             Icons.remove_red_eye,
                                             color: Colors.white,
                                             size: width * 0.05,
                                           ),
+                                          // Dar um espaço entre os Widget's.
                                           SizedBox(width: width * 0.01),
+                                          // Contagem de views.
                                           Text(
                                             textAlign: TextAlign.center,
                                             mapSearch[index]!['Views']
@@ -331,7 +361,9 @@ class _SearchState extends State<Search> {
                                             style: const TextStyle(
                                                 color: Colors.white),
                                           ),
+                                          // Dar um espaço entre os Widget's.
                                           SizedBox(width: width * 0.01),
+                                          // Duração.
                                           Text(
                                             textAlign: TextAlign.center,
                                             '- Duração: ${mapSearch[index]!['Duration']}',
@@ -350,6 +382,7 @@ class _SearchState extends State<Search> {
                       ),
                     ),
                   ),
+                // Tela de Carregamento.
                 if (loading) LoadScreen().loadingNormal(size)
               ],
             ),

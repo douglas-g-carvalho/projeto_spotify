@@ -6,69 +6,91 @@ import '../Utils/constants.dart';
 import '../Utils/image_loader.dart';
 import '../Utils/load_screen.dart';
 
+// Classe para tocar as músicas da Lista.
 class PlayMusic extends StatefulWidget {
+  // ID do spotify.
   final String trackId;
+  // Básico da classe.
   const PlayMusic({super.key, required this.trackId});
-
+  // Inicia a classe Stateful.
   @override
   State<PlayMusic> createState() => _PlayMusicState();
 }
 
 class _PlayMusicState extends State<PlayMusic> {
+  // Fonte de dados das músicas.
   final musicPlayer = MusicPlayer();
 
+  // allLoad para página e Loading para o player.
   bool allLoad = false;
   bool loading = false;
 
+  // Função para progressBar conseguir mostrar quando está carregando.
   void loadingMaster(bool value) {
+    // Atualiza a tela e o loading.
     setState(() => loading = value);
   }
 
+  // Quando o play_music for iniciado.
   @override
   void initState() {
+    // Ambos são necessário para conseguir usar a API do Spotify.
     final credentials =
         sptf.SpotifyApiCredentials(Constants.clientId, Constants.clientSecret);
     final spotify = sptf.SpotifyApi(credentials);
 
+    // Pesquisa o ID da playlist e pega seus dados.
     spotify.playlists.get(widget.trackId).then((value) {
+      // Adiciona o nome da Playlist.
       musicPlayer.playlistName.add(value.name!);
+      // Adiciona a imagem da Playlist.
       musicPlayer.artistImage.add(value.images!.first.url!);
-
+      // Pega faz um forEach em cada uma das músicas da Playlist.
       value.tracks?.itemsNative?.forEach((value) {
+        // List com os nomes dos artistas de uma música.
         List<String> saveArtistName = [];
-
+        // Adiciona o nome da música.
         musicPlayer.songList.add(value['track']['name']);
+        // Adiciona a capa da música.
         musicPlayer.imageList.add(value['track']['album']['images'][0]['url']);
+        // Faz um forEach para cada artista.
         value['track']['artists'].forEach((artistas) {
+          // Adiciona o nome do artista.
           saveArtistName.add(artistas['name']);
         });
+        // Adiciona os nomes dos artistas.
         musicPlayer.artistName.addAll({value['track']['name']: saveArtistName});
-
-        setState(() {});
       });
+      // Atualiza a tela e mostra o que foi carregado.
     }).then((value) => setState(() => allLoad = true));
-
     super.initState();
   }
 
+  // Quando for sair do play_music.
   @override
   void dispose() {
+    // Limpa o player quando sair do play_music.
     musicPlayer.player.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final width = size.width;
-    final height = size.height;
+    // Pega o tamanho da tela e armazena.
+    final Size size = MediaQuery.sizeOf(context);
+    // Salva o width.
+    final double width = size.width;
+    // Salva o height.
+    final double height = size.height;
 
     return Scaffold(
         appBar: AppBar(
           iconTheme: const IconThemeData(color: Colors.white),
           title: Row(
             children: [
+              // Se tudo estiver carregado.
               if (allLoad)
+                // Imagem da Playlist com tamanho personalizado e circular.
                 SizedBox(
                   width: width * 0.14,
                   height: height * 0.14,
@@ -79,7 +101,9 @@ class _PlayMusicState extends State<PlayMusic> {
                         size: width * 0.14),
                   ),
                 ),
+              // Adiciona um vão entre os Widget's.
               SizedBox(width: width * 0.01),
+              // Nome da Playlist.
               Expanded(
                 child: Text(
                   musicPlayer.playlistName.elementAtOrNull(0) ?? '',
@@ -95,7 +119,9 @@ class _PlayMusicState extends State<PlayMusic> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // Dá um espaço entre o topo da página e o Widget's abaixo.
                     SizedBox(height: size.height * 0.07),
+                    // Imagem da capa da música com tamanho personalizado e circular..
                     SizedBox(
                       width: size.width * 1,
                       height: size.height * 0.35,
@@ -108,7 +134,9 @@ class _PlayMusicState extends State<PlayMusic> {
                             size: width * 0.80),
                       ),
                     ),
+                    // Adiciona um vão entre os Widget's.
                     SizedBox(height: size.height * 0.05),
+                    // Nome da música.
                     Text(
                       musicPlayer.songList
                               .elementAtOrNull(musicPlayer.songIndex) ??
@@ -120,12 +148,14 @@ class _PlayMusicState extends State<PlayMusic> {
                         fontSize: width * 0.07,
                       ),
                     ),
+                    // Barra de progresso da música.
                     musicPlayer.progressBar(
                       width * 0.80,
                       loadingMaster,
                     ),
                     Column(
                       children: [
+                        // Row para passar a música ou toca-lá.
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -223,40 +253,44 @@ class _PlayMusicState extends State<PlayMusic> {
                             ),
                           ],
                         ),
+                        // Row para ativar ou desativar os modos (repetir, tocar próxima e aleatório).
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
+                            // Modo repetir ou tocar próxima.
                             TextButton(
-                  onPressed: () {
-                    switch (musicPlayer.repeatType) {
-                      case 0:
-                        musicPlayer.autoPlay = true;
-                        musicPlayer.repeatType += 1;
-                      case 1:
-                        musicPlayer.repeat = true;
-                        musicPlayer.autoPlay = false;
-                        musicPlayer.repeatType += 1;
-                      case 2:
-                        musicPlayer.repeat = false;
-                        musicPlayer.repeatType = 0;
-                    }
-
-                    setState(() {});
-                  },
-                  child: Icon(
-                    musicPlayer.repeatType == 0
-                        ? Icons.repeat
-                        : musicPlayer.repeatType == 1
-                            ? Icons.repeat
-                            : Icons.repeat_one,
-                    size: width * 0.11,
-                    color: musicPlayer.repeatType == 0
-                        ? Colors.white
-                        : musicPlayer.repeatType == 1
-                            ? Constants.color
-                            : Constants.color,
-                  ),
-                ),
+                              onPressed: () {
+                                // Trocar os modos entre (desativado, tocar próxima ou repetir).
+                                switch (musicPlayer.repeatType) {
+                                  case 0:
+                                    musicPlayer.autoPlay = true;
+                                    musicPlayer.repeatType += 1;
+                                  case 1:
+                                    musicPlayer.repeat = true;
+                                    musicPlayer.autoPlay = false;
+                                    musicPlayer.repeatType += 1;
+                                  case 2:
+                                    musicPlayer.repeat = false;
+                                    musicPlayer.repeatType = 0;
+                                }
+                                // Atualizar a tela.
+                                setState(() {});
+                              },
+                              child: Icon(
+                                musicPlayer.repeatType == 0
+                                    ? Icons.repeat
+                                    : musicPlayer.repeatType == 1
+                                        ? Icons.repeat
+                                        : Icons.repeat_one,
+                                size: width * 0.11,
+                                color: musicPlayer.repeatType == 0
+                                    ? Colors.white
+                                    : musicPlayer.repeatType == 1
+                                        ? Constants.color
+                                        : Constants.color,
+                              ),
+                            ),
+                            // Modo Aleatório.
                             TextButton(
                               onPressed: () {
                                 setState(() =>
@@ -277,6 +311,7 @@ class _PlayMusicState extends State<PlayMusic> {
                   ],
                 ),
               )
+            // Tela de Carregamento.
             : LoadScreen().loadingNormal(size));
   }
 }

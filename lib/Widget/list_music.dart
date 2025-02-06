@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../Utils/groups.dart';
 import 'music_choices.dart';
 
+// Classe criada para o usuário selecionar alguma música para escutar da Lista.
 class ListMusic extends StatefulWidget {
   final Groups group;
   final Set<Map<String, String>> mapListMusics;
@@ -18,6 +19,7 @@ class ListMusic extends StatefulWidget {
 }
 
 class _ListMusicState extends State<ListMusic> {
+  // Manter a ListView sempre no topo ao iniciar o ListMusic.
   ScrollController scrollController = ScrollController(
     initialScrollOffset: 0,
     keepScrollOffset: false,
@@ -25,8 +27,11 @@ class _ListMusicState extends State<ListMusic> {
 
   @override
   Widget build(BuildContext context) {
+    // Pega o tamanho da tela e armazena.
     final Size size = MediaQuery.sizeOf(context);
+    // Salva o width.
     final double width = size.width;
+    // Salva o height.
     final double height = size.height;
 
     return SizedBox(
@@ -34,7 +39,7 @@ class _ListMusicState extends State<ListMusic> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // vai da metade pra baixo
+          // ListView que vai da metade pra baixo.
           SizedBox(
             width: width * 0.475,
             height: height * 0.40,
@@ -48,17 +53,15 @@ class _ListMusicState extends State<ListMusic> {
                 return MusicChoices(
                   texto: widget.mapListMusics.elementAtOrNull(index)?['name']!,
                   icon: widget.mapListMusics.elementAtOrNull(index)?['cover']!,
-                  spotify: widget.mapListMusics.elementAtOrNull(index)?['spotify']!,
+                  spotify:
+                      widget.mapListMusics.elementAtOrNull(index)?['spotify']!,
                 );
               },
             ),
           ),
-          // vão entre eles
-          SizedBox(
-            width: width * 0.05,
-            height: height * 0.40,
-          ),
-          // vai da metade pra cima
+          // Adiciona um vão entre os ListView's.
+          SizedBox(width: width * 0.05, height: height * 0.40),
+          // ListView que vai da metade pra cima
           SizedBox(
             width: width * 0.475,
             height: height * 0.40,

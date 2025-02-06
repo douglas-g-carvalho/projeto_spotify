@@ -10,6 +10,7 @@ import '../Utils/database.dart';
 import '../Utils/groups.dart';
 import '../Utils/load_screen.dart';
 
+// Classe para realizar a troca da Lista e Mixes.
 class TrocarPlaylist extends StatefulWidget {
   final Groups group;
 
@@ -23,6 +24,7 @@ class TrocarPlaylist extends StatefulWidget {
 }
 
 class _TrocarPlaylistState extends State<TrocarPlaylist> {
+  // Pega os ID's e cria uma lista com os nomes das playlist's.
   Future<Set<Map<String, String>>> getNameFromSpotify(
       List<String> listID, Set<Map<String, String>> newList) async {
     if (listID.isEmpty) {
@@ -51,12 +53,16 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
     return newList;
   }
 
+  // Inicia o Controle de Arquivo.
   final storage = ControleArquivo();
 
+  // Controle de Texto para o TextFormField.
   late TextEditingController controller;
 
+  // Backup da database.
   dynamic databaseBackup = {};
 
+  // Cria um Texto personalizado com o botão de deletar no lado.
   Widget rowText(String file, Size size, int index) {
     Set<Map<String, String>> name = {};
 
@@ -127,6 +133,7 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
     );
   }
 
+  // Botão de adicionar personalizado.
   Future<void> add(Size size, String file) {
     String hint = '';
 
@@ -209,9 +216,11 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
   @override
   void initState() {
     super.initState();
+    // Atribuindo o Editor de Texto.
     controller = TextEditingController();
   }
 
+  // Função do Flutter para quando a Página fechar.
   @override
   void dispose() {
     controller.dispose();
@@ -220,6 +229,7 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
 
   @override
   Widget build(BuildContext context) {
+    // Pega o tamanho da tela e armazena.
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
@@ -236,14 +246,16 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
         actions: [
           TextButton(
               onPressed: () {
+                // Mostra um pop-up.
                 showDialog(
                     context: context,
                     barrierColor: Colors.black.withOpacity(0.5),
                     builder: (ctx) {
                       return AlertDialog(
                         title: Text(
-                          'escolha qual deseja restaurar',
-                          style: TextStyle(fontSize: size.width * 0.050),
+                          'Restaurar',
+                          style: TextStyle(fontSize: size.width * 0.065),
+                          textAlign: TextAlign.center,
                         ),
                         actions: [
                           Row(
@@ -251,8 +263,10 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                             children: [
                               TextButton(
                                 onPressed: () async {
+                                  // Tela de Carregamento.
                                   LoadScreen().loadingScreen(context);
 
+                                  // Explicação se encontra na Função.
                                   await Database()
                                       .updateDataBase()
                                       .get()
@@ -260,19 +274,23 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                                     databaseBackup = value.value!;
                                   });
 
+                                  // Explicação se encontra na Função.
                                   await storage
                                       .delete('list')
                                       .then((value) async {
                                     try {
+                                      // Explicação se encontra na Função.
                                       await ControleArquivo().writeAdd(
                                           'list', databaseBackup['Lista']);
 
+                                      // Explicação se encontra na Função.
                                       await ControleArquivo()
                                           .readCounter('list')
                                           .then((value) {
                                         widget.group.list = value;
                                       });
 
+                                      // Explicação se encontra na Função.
                                       await getNameFromSpotify(
                                               widget.group.get('list'), {})
                                           .then((value) {
@@ -286,7 +304,9 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                                   });
 
                                   if (context.mounted) {
+                                    // Remove a tela que está no topo.
                                     Navigator.of(context).pop();
+                                    // Remove a tela que está no topo.
                                     Navigator.of(context).pop();
                                   }
                                 },
@@ -297,8 +317,10 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                               ),
                               TextButton(
                                 onPressed: () async {
+                                  // Tela de Carregamento.
                                   LoadScreen().loadingScreen(context);
 
+                                  // Explicação se encontra na Função.
                                   await Database()
                                       .updateDataBase()
                                       .get()
@@ -306,19 +328,23 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                                     databaseBackup = value.value!;
                                   });
 
+                                  // Explicação se encontra na Função.
                                   await storage
                                       .delete('mixes')
                                       .then((value) async {
                                     try {
+                                      // Explicação se encontra na Função.
                                       await ControleArquivo().writeAdd(
                                           'mixes', databaseBackup['Mixes']);
 
+                                      // Explicação se encontra na Função.
                                       await ControleArquivo()
                                           .readCounter('mixes')
                                           .then((value) {
                                         widget.group.mixes = value;
                                       });
 
+                                      // Explicação se encontra na Função.
                                       await getNameFromSpotify(
                                               widget.group.get('mixes'), {})
                                           .then((value) {
@@ -332,7 +358,9 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                                   });
 
                                   if (context.mounted) {
+                                    // Remove a tela que está no topo.
                                     Navigator.of(context).pop();
+                                    // Remove a tela que está no topo.
                                     Navigator.of(context).pop();
                                   }
                                 },
@@ -362,10 +390,12 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // Texto invisível para fixar o texto principal no meio.
                 const Text(
                   'aaa',
                   style: TextStyle(color: Colors.transparent),
                 ),
+                // Texto Principal.
                 Text(
                   'Lista',
                   style: TextStyle(
@@ -374,6 +404,7 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                     decoration: TextDecoration.none,
                   ),
                 ),
+                // TextButton de + para adicionar conteúdo na Lista.
                 TextButton(
                   onPressed: () {
                     // faz o input aparecer e verificar se existe o link
@@ -390,6 +421,7 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
               ],
             ),
           ),
+          // Retângulo com nomes das Listas.
           Container(
             decoration: BoxDecoration(
               border: Border.all(color: Colors.white),
@@ -406,15 +438,18 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
               ),
             ),
           ),
+          // Dar um espaço entre os Widget's.
           SizedBox(height: size.height * 0.005),
           Center(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // Texto invisível para fixar o texto principal no meio.
                 const Text(
                   'aaa',
                   style: TextStyle(color: Colors.transparent),
                 ),
+                // Texto Principal.
                 Text(
                   'Mixes',
                   style: TextStyle(
@@ -423,6 +458,7 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                     decoration: TextDecoration.none,
                   ),
                 ),
+                // TextButton de + para adicionar conteúdo no Mixes.
                 TextButton(
                   onPressed: () {
                     // faz o input aparecer e verificar se existe o link
@@ -439,6 +475,7 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
               ],
             ),
           ),
+          // Retângulo com nomes dos Mixes.
           Container(
             decoration: BoxDecoration(
               border: Border.all(color: Colors.white),

@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 
 import 'constants.dart';
 
+// Classe criada para facilitar o uso das Telas de Carregamento.
 class LoadScreen {
-  Future<void> loadingScreen(BuildContext context) {
-    final size = MediaQuery.of(context).size;
 
+  // Função que faz a tela de carregamento.
+  Future<void> loadingScreen(BuildContext context) {
     return showDialog(
         barrierDismissible: false,
         context: context,
@@ -16,7 +17,7 @@ class LoadScreen {
               child: AlertDialog(
                 backgroundColor: Colors.transparent,
                 actions: [
-                  loadingNormal(size),
+                  loadingNormal(MediaQuery.of(context).size),
                 ],
               ),
             ),
@@ -24,6 +25,7 @@ class LoadScreen {
         });
   }
 
+  // Widget com ícone de carregamento.
   Widget loadingNormal(Size size) {
     return Center(
       heightFactor: 16,

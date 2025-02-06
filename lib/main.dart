@@ -12,12 +12,16 @@ import 'Utils/groups.dart';
 
 import 'Page/tela_inicial.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+// Classe padrão criada pelo Próprio Flutter para rodar o aplicativo.
 
+void main() async {
+  // usado para remover erro no terminal.
+  WidgetsFlutterBinding.ensureInitialized();
+  // inicia o Firebase.
   await Firebase.initializeApp();
 
   runApp(
+    // MultiProvider para usar o ChangeNotifier com mais de um Provider.
     MultiProvider(
       providers: [
         Provider(create: (context) => MusicPlayer()),
@@ -31,13 +35,16 @@ void main() async {
 class MyApp extends StatelessWidget {
   MyApp({super.key});
 
+  // Inicia o Groups para deixar salvo os arquivos e só precisar carrega-los uma vez.
   final group = Groups();
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      // Remove o Debug no canto da tela.
       debugShowCheckedModeBanner: false,
       title: 'Musical Wizard',
+      // configura o Tema default dos Widgets.
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.black,
         appBarTheme: const AppBarTheme(
@@ -46,6 +53,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Constants.color),
         useMaterial3: true,
       ),
+      // Rotas para navegação mais fácil.
       routes: {
         AppRoutes.login: (ctx) => TelaLogin(
               group: group,

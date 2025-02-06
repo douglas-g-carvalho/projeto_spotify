@@ -7,6 +7,7 @@ import 'package:projeto_spotify/Utils/load_screen.dart';
 import '../Utils/constants.dart';
 import '../Utils/groups.dart';
 
+// Classe para realizar o login ou cadastro.
 class TelaLogin extends StatefulWidget {
   final Groups group;
 
@@ -17,21 +18,27 @@ class TelaLogin extends StatefulWidget {
 }
 
 class _TelaLoginState extends State<TelaLogin> {
+
+  // Controles de Texto para os TextFormFields.
   late TextEditingController controllerUserName;
   late TextEditingController controllerEmail;
   late TextEditingController controllerSenha;
   late TextEditingController controllerConfirmarSenha;
 
+  // Referência ao arquivo 'Informação' do Firebase.
   late DatabaseReference dbRef;
 
+  // String de possíveis erros.
   String? errorUserName;
   String? errorEmail;
   String? errorSenha;
   String? errorConfirmarSenha;
 
+  // Booleano para checagem.
   bool login = true;
   bool loginIsOkay = true;
 
+  // Função para verificar caso exista algum erro nos TextFormFields e avisar ao usuário.
   Future<void> checkValidation({
     required bool validation,
     required String? errorText,
@@ -73,7 +80,8 @@ class _TelaLoginState extends State<TelaLogin> {
     }
   }
 
-  Widget textFieldEmailSenha({
+  // Função para criar um TextFormField personalizado para Apelido/E-mail/Senha/ConfirmarSenha.
+  Widget textFormFieldEmailSenha({
     required TextEditingController controller,
     TextInputType? keyboardType,
     required String? errorText,
@@ -103,6 +111,7 @@ class _TelaLoginState extends State<TelaLogin> {
     );
   }
 
+  // Função para criar um TextButton personalizado para Login/Cadastro.
   Widget loginOrCadastro({
     required String texto,
     required VoidCallback onPressed,
@@ -131,6 +140,7 @@ class _TelaLoginState extends State<TelaLogin> {
     }
   }
 
+  // Função para mostrar um erro na parte de baixo da tela.
   Future<void> bottomError({required String texto, required Size size}) {
     return showModalBottomSheet(
         backgroundColor: Colors.red[900],
@@ -153,6 +163,7 @@ class _TelaLoginState extends State<TelaLogin> {
         });
   }
 
+  // Função para converter a mensagem de erro do firabase para o português.
   String errorConvert(String error) {
     switch (error) {
       case '[firebase_auth/invalid-email] The email address is badly formatted.':
@@ -169,6 +180,7 @@ class _TelaLoginState extends State<TelaLogin> {
     }
   }
 
+  // Função para remover espaço no Texto dos TextFields.
   void removeSpace(bool cadastro) {
     controllerEmail.text = controllerEmail.text.replaceAll(' ', '');
     controllerSenha.text = controllerSenha.text.replaceAll(' ', '');
@@ -178,9 +190,11 @@ class _TelaLoginState extends State<TelaLogin> {
     }
   }
 
+  // Função do Flutter para quando a Página iniciar.
   @override
   void initState() {
     super.initState();
+    // Atribuindo os Editores de Texto.
     controllerUserName = TextEditingController();
     controllerEmail = TextEditingController();
     controllerSenha = TextEditingController();
@@ -189,6 +203,7 @@ class _TelaLoginState extends State<TelaLogin> {
     dbRef = FirebaseDatabase.instance.ref().child('Informações');
   }
 
+  // Função do Flutter para quando a Página fechar.
   @override
   void dispose() {
     controllerUserName.dispose();
@@ -200,6 +215,8 @@ class _TelaLoginState extends State<TelaLogin> {
 
   @override
   Widget build(BuildContext context) {
+
+    // Pega o tamanho da tela e armazena.
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
@@ -208,54 +225,61 @@ class _TelaLoginState extends State<TelaLogin> {
           child: Center(
             child: Column(
               children: [
+                // Dar um espaço separar do topo da tela.
                 SizedBox(height: size.height * 0.05),
+                // Coloca o ícone na tela com tamaho especificado e forma oval.
                 SizedBox(
                     height: size.height * 0.30,
                     child: ClipOval(child: Image.asset('assets/icon.png'))),
+                // Dar um espaço entre os Widget's.
                 SizedBox(height: size.height * 0.05),
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Apelido
+                    // TextFormField do Apelido.
                     if (!login)
-                      textFieldEmailSenha(
+                      textFormFieldEmailSenha(
                         controller: controllerUserName,
                         errorText: errorUserName,
                         hint: 'Apelido',
                         size: size,
                       ),
-                    // Email
-                    textFieldEmailSenha(
+                    // TextFormField do Email.
+                    textFormFieldEmailSenha(
                       controller: controllerEmail,
                       keyboardType: TextInputType.emailAddress,
                       errorText: errorEmail,
                       hint: 'Email',
                       size: size,
                     ),
-                    // Senha
-                    textFieldEmailSenha(
+                    // TextFormField do Senha.
+                    textFormFieldEmailSenha(
                       controller: controllerSenha,
                       errorText: errorSenha,
                       hint: 'Senha',
                       size: size,
                     ),
-                    // Confirmar Senha
+                    // TextFormField do ConfirmarSenha.
                     if (!login)
-                      textFieldEmailSenha(
+                      textFormFieldEmailSenha(
                         controller: controllerConfirmarSenha,
                         errorText: errorConfirmarSenha,
                         hint: 'Confirmar Senha',
                         size: size,
                       ),
+                    // Dar um espaço entre os Widget's.
                     SizedBox(height: size.height * 0.03),
-                    // Login
+                    // TextButton do Login.
                     loginOrCadastro(
                         texto: 'Logar',
                         onPressed: () async {
+                          // Tela de Carregamento.
                           LoadScreen().loadingScreen(context);
+                          // Explicação se encontra na Função.
                           removeSpace(false);
 
                           try {
+                            // Função do Firebase para fazer login.
                             await FirebaseAuth.instance
                                 .signInWithEmailAndPassword(
                               email: controllerEmail.text,
@@ -263,27 +287,33 @@ class _TelaLoginState extends State<TelaLogin> {
                             );
 
                             if (context.mounted) {
+                              // Remove a tela que está no topo, que atualmente é a de carregamento.
                               Navigator.of(context).pop();
                               if (FirebaseAuth.instance.currentUser != null) {
+                                // Vai para a tela_inicial.
                                 Navigator.of(context).pushNamed('/inicio');
                               }
                             }
                           } catch (error) {
                             if (context.mounted) {
+                              // Remove a tela que está no topo, que atualmente é a de carregamento.
                               Navigator.of(context).pop();
                             }
 
+                            // Explicação se encontra na Função.
                             bottomError(texto: 'Conta não existe!', size: size);
                           }
                         },
                         size: size,
                         loginOrCadastro: true),
-                    // Cadastro
+                    // TextButton do Cadastro.
                     loginOrCadastro(
                         texto: 'Cadastrar',
                         onPressed: () async {
+                          // Explicação se encontra na Função.
                           removeSpace(true);
 
+                          // Validação do Apelido.
                           await checkValidation(
                             validation: controllerUserName.text == '',
                             errorText: 'errorUserName',
@@ -291,6 +321,7 @@ class _TelaLoginState extends State<TelaLogin> {
                             size: size,
                           );
 
+                          // Validação do E-mail.
                           await checkValidation(
                             validation: controllerEmail.text == '',
                             errorText: 'errorEmail',
@@ -298,6 +329,7 @@ class _TelaLoginState extends State<TelaLogin> {
                             size: size,
                           );
 
+                          // Validação da Senha.
                           await checkValidation(
                             validation: controllerSenha.text == '',
                             errorText: 'errorSenha',
@@ -305,6 +337,7 @@ class _TelaLoginState extends State<TelaLogin> {
                             size: size,
                           ).then((value) async {
                             if (errorSenha == null) {
+                              // Validação da Senha.
                               await checkValidation(
                                 validation: controllerSenha.text != '' &&
                                     controllerSenha.text.length < 6,
@@ -313,6 +346,7 @@ class _TelaLoginState extends State<TelaLogin> {
                                 size: size,
                               ).then((value) async {
                                 if (errorSenha == null) {
+                                  // Validação do ConfirmarSenha.
                                   await checkValidation(
                                     validation: controllerSenha.text !=
                                         controllerConfirmarSenha.text,
@@ -329,6 +363,7 @@ class _TelaLoginState extends State<TelaLogin> {
 
                           if (loginIsOkay) {
                             if (context.mounted) {
+                              // Tela de Carregamento.
                               LoadScreen().loadingScreen(context);
                             }
 
@@ -339,31 +374,38 @@ class _TelaLoginState extends State<TelaLogin> {
                             setState(() {});
 
                             try {
+                              // Cadastra conta no Firebase.
                               await FirebaseAuth.instance
                                   .createUserWithEmailAndPassword(
                                       email: controllerEmail.text,
                                       password: controllerSenha.text);
 
+                              // Salva o apelido e cria a Lista e Mixes vazio.
                               Map<String, String> mapInfo = {
                                 'Apelido': controllerUserName.text,
                                 'Lista': '',
                                 'Mixes': '',
                               };
 
+                              // Adiciona na database do Firebase.
                               await dbRef
                                   .child(FirebaseAuth.instance.currentUser!.uid)
                                   .set(mapInfo);
 
                               if (context.mounted) {
+                                // Remove a tela que está no topo, que atualmente é a de carregamento.
                                 Navigator.of(context).pop();
                                 if (FirebaseAuth.instance.currentUser != null) {
+                                  // Vai para tela_inicial.
                                   Navigator.of(context).pushNamed('/inicio');
                                 }
                               }
                             } catch (error) {
                               if (context.mounted) {
+                                // Remove a tela que está no topo, que atualmente é a de carregamento.
                                 Navigator.of(context).pop();
 
+                                // Explicação se encontra na Função.
                                 bottomError(
                                     texto: errorConvert(error.toString()),
                                     size: size);
@@ -374,8 +416,9 @@ class _TelaLoginState extends State<TelaLogin> {
                         },
                         size: size,
                         loginOrCadastro: false),
+                    // Dar um espaço entre os Widget's.
                     SizedBox(height: size.height * 0.03),
-                    // Criar Conta / Fazer Login
+                    // TextButton para trocar entre Criar Conta / Fazer Login.
                     TextButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Constants.color[700],

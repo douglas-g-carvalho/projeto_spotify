@@ -9,35 +9,49 @@ import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 import 'constants.dart';
 
+// Classe para ser o player de música.
 class MusicPlayer extends ChangeNotifier {
+  
+  // Contador de duração da música.
   Duration musica = Duration.zero;
 
+  // Set de informações importantes diretas do Spotify.
   final Set<String> playlistName = {};
   final Set<String> artistImage = {};
   final Set<String> songList = {};
 
+  // Imagem dos albuns das músicas.
   final List<String> imageList = [];
 
+  // Map envolvendo informações do Spotify e Youtube.
   final Map<String, List<String>> artistName = {};
   final Map<String, AudioSource> mapSongURL = {};
   final Map<String, Duration> mapDuration = {};
 
+  // Nome da música que está tocando.
   String actualSong = '';
 
+  // ID da música que está tocando.
   int songIndex = 0;
 
+  // ID da nova música para comparar com a atual.
   int newSong = 0;
 
+  //Descobrir em qual modo está o repetidor (Desligado, Tocar próxima música, Repetir).
   int repeatType = 0;
 
+  // Modos (Repetir, Aleatório, Tocar próxima música).
   bool repeat = false;
   bool shuffle = false;
   bool autoPlay = false;
 
+  // Player principal.
   final player = AudioPlayer();
 
+  // Função vazia para atualizar o ProgressBar.
   Future<void> provisorio() async {}
 
+  // Função para pegar os nomes dos artistas e transformar em uma String separando com vírgula.
   String textArtists(List<String> listArtists) {
     String artistName = '';
     for (var value in listArtists) {
@@ -47,6 +61,7 @@ class MusicPlayer extends ChangeNotifier {
     return artistName;
   }
 
+  // Função criada para ser a barra de progresso principal das músicas.
   Widget progressBar(double width, Function loadingMaster) {
     Duration minDuration = const Duration(milliseconds: 1);
 
@@ -107,6 +122,7 @@ class MusicPlayer extends ChangeNotifier {
     );
   }
 
+  // Função para trocar de música.
   Future<void> changeMusic() async {
     // checa se a música existe no mapSongURL
     if (!mapSongURL.containsKey(songList.elementAt(songIndex))) {
@@ -117,6 +133,7 @@ class MusicPlayer extends ChangeNotifier {
     }
   }
 
+  // Função para tocar a próxima música da lista.
   Future<void> autoPlayOn() async {
     if (songIndex < songList.length - 1) {
       songIndex += 1;
@@ -130,6 +147,7 @@ class MusicPlayer extends ChangeNotifier {
     });
   }
 
+  // Função para saber quando a música foi completada.
   bool musicaCompletada() {
     if (mapDuration[songList.elementAt(songIndex)] != null) {
       return musica.inSeconds ==
@@ -139,6 +157,7 @@ class MusicPlayer extends ChangeNotifier {
     }
   }
 
+  // Função para tocar uma música da lista de forma aleatória.
   Future<void> shuffleOn() async {
     int newMusic = Random().nextInt(songList.length);
 
@@ -153,6 +172,7 @@ class MusicPlayer extends ChangeNotifier {
     });
   }
 
+  // Função para pegar o áudio da música.
   Future<void> getUrlMusic(
       String musicName, Map<String, List<String>> nameArtists) async {
     actualSong = musicName;
@@ -193,6 +213,7 @@ class MusicPlayer extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Função para colocar uma música para tocar.
   Future<void> setAudioSource(String musicName) async {
     actualSong = musicName;
 
@@ -200,6 +221,7 @@ class MusicPlayer extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Função para dar play ou pausar.
   Future<void> play() async {
     if (!player.playing) {
       player.play();
@@ -209,6 +231,7 @@ class MusicPlayer extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Função para passar para próxima música da lista.
   Future<void> passMusic(String lado) async {
     player.stop();
     if (lado == 'Left') {
