@@ -11,7 +11,6 @@ import 'constants.dart';
 
 // Classe para ser o player de música.
 class MusicPlayer extends ChangeNotifier {
-  
   // Contador de duração da música.
   Duration musica = Duration.zero;
 
@@ -177,7 +176,7 @@ class MusicPlayer extends ChangeNotifier {
       String musicName, Map<String, List<String>> nameArtists) async {
     actualSong = musicName;
 
-    String nameArtist = textArtists(nameArtists[musicName]!);
+    String nameArtist = nameArtists[musicName]![0];
 
     int indexVideos = 0;
     final yt = YoutubeExplode();
@@ -185,7 +184,7 @@ class MusicPlayer extends ChangeNotifier {
     while (true) {
       try {
         final video = (await yt.search
-            .search("$musicName $nameArtist música"))[indexVideos];
+            .search("$musicName $nameArtist Original"))[indexVideos];
 
         if (video.duration == null) {
           indexVideos++;

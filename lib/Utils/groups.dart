@@ -4,33 +4,37 @@ import 'package:spotify/spotify.dart';
 
 //  Classe criada para deixar tudo pré-carregado após a primeira vez entrando no aplicativo.
 class Groups extends ChangeNotifier {
-
   // Salvando informações recebidas do Firebase.
   String token = '';
   String apelido = '';
 
   // List's principais usados no aplicativo.
-  List<String> list = [];
-  List<String> mixes = [];
+  List<String> idMusic = [];
 
   // Map's principais usados no aplicativo.
-  Set<Map<String, String>> listMap = {};
-  Set<Map<String, String>> mixesMap = {};
+  Set<Map<String, String>> idMusicMap = {};
+
+  // Limpa a String da ID removendo os '-/-' desnecessários.
+  String limpadoraID(String idMusic) {
+    String idLimpa = '';
+
+    List<String> listaSemSeparador = idMusic.split('-/-');
+
+    listaSemSeparador.removeWhere((value) => value == '');
+    for (String id in listaSemSeparador) {
+      idLimpa += '$id-/-';
+    }
+
+    return idLimpa;
+  }
 
   // Função para mandar uma cópia de uma das List's.
-  List<String> get(String file) {
-    switch (file) {
-      case 'list':
-        return [...list];
-      case 'mixes':
-        return [...mixes];
-      case _:
-        return [];
-    }
+  List<String> get() {
+    return [...idMusic];
   }
 
   // Função para pesquisar o conteúdo no arquivo pedido e salvar no Map correspondente.
-  Future<void> loadMap(String file) async {
+  Future<void> loadMap() async {
     final credentials =
         SpotifyApiCredentials(Constants.clientId, Constants.clientSecret);
     final spotify = SpotifyApi(credentials);
@@ -38,35 +42,42 @@ class Groups extends ChangeNotifier {
     List<String> id = [];
     Set<Map<String, String>> newMap = {};
 
-    switch (file) {
-      case 'list':
-        id = list;
+    id = idMusic;
 
-      case 'mixes':
-        id = mixes;
-    }
-
-    for (int index = 0; index != id.length; index++) {
-      await spotify.playlists.get(id[index]).then((value) {
-        try {
+    // Faz o teste com a ID para descobrir qual tipo Playlist ou Album.
+    Future<void> testID(int index) async {
+      try {
+        // Testa com Playlists.
+        await spotify.playlists.get(id[index]).then((value) {
           newMap.add({
             'name': value.name!,
             'cover': value.images!.first.url!,
-            'spotify': value.id!
+            'spotify': value.id!,
+            'total': value.tracks!.total.toString(),
+          });
+        });
+      } catch (error) {
+        try {
+          // Testa com albums.
+          await spotify.albums.get(id[index]).then((value) {
+            newMap.add({
+              'name': value.name!,
+              'cover': value.images!.first.url!,
+              'spotify': value.id!,
+              'total': value.tracks!.length.toString(),
+            });
           });
         } catch (error) {
-          newMap.elementAt(index);
-          index -= 1;
+          // Falha.
         }
-      });
+      }
     }
 
-    switch (file) {
-      case 'list':
-        listMap = newMap;
-      case 'mixes':
-        mixesMap = newMap;
+    for (int index = 0; index != id.length; index++) {
+      await testID(index);
     }
+
+    idMusicMap = newMap;
 
     notifyListeners();
   }

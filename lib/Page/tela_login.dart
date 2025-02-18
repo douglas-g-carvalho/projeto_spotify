@@ -18,7 +18,6 @@ class TelaLogin extends StatefulWidget {
 }
 
 class _TelaLoginState extends State<TelaLogin> {
-
   // Controles de Texto para os TextFormFields.
   late TextEditingController controllerUserName;
   late TextEditingController controllerEmail;
@@ -215,7 +214,6 @@ class _TelaLoginState extends State<TelaLogin> {
 
   @override
   Widget build(BuildContext context) {
-
     // Pega o tamanho da tela e armazena.
     final size = MediaQuery.of(context).size;
 
@@ -383,8 +381,7 @@ class _TelaLoginState extends State<TelaLogin> {
                               // Salva o apelido e cria a Lista e Mixes vazio.
                               Map<String, String> mapInfo = {
                                 'Apelido': controllerUserName.text,
-                                'Lista': '',
-                                'Mixes': '',
+                                'ID Music': '',
                               };
 
                               // Adiciona na database do Firebase.

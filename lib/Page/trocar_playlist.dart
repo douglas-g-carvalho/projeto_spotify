@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import 'package:projeto_spotify/Utils/controle_arquivo.dart';
 
@@ -24,35 +22,6 @@ class TrocarPlaylist extends StatefulWidget {
 }
 
 class _TrocarPlaylistState extends State<TrocarPlaylist> {
-  // Pega os ID's e cria uma lista com os nomes das playlist's.
-  Future<Set<Map<String, String>>> getNameFromSpotify(
-      List<String> listID, Set<Map<String, String>> newList) async {
-    if (listID.isEmpty) {
-      return {};
-    }
-
-    final credentials =
-        SpotifyApiCredentials(Constants.clientId, Constants.clientSecret);
-    final spotify = SpotifyApi(credentials);
-
-    for (int index = 0; index != listID.length; index++) {
-      await spotify.playlists.get(listID[index]).then((value) {
-        try {
-          newList.add({
-            'name': value.name!,
-            'cover': value.images!.first.url!,
-            'spotify': value.id!
-          });
-        } catch (error) {
-          newList.remove(newList.elementAt(index));
-          index -= 1;
-        }
-      });
-    }
-
-    return newList;
-  }
-
   // Inicia o Controle de Arquivo.
   final storage = ControleArquivo();
 
@@ -63,15 +32,8 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
   dynamic databaseBackup = {};
 
   // Cria um Texto personalizado com o botão de deletar no lado.
-  Widget rowText(String file, Size size, int index) {
-    Set<Map<String, String>> name = {};
-
-    switch (file) {
-      case 'list':
-        name = widget.group.listMap;
-      case 'mixes':
-        name = widget.group.mixesMap;
-    }
+  Widget rowText(Size size, int index) {
+    Set<Map<String, String>> name = widget.group.idMusicMap;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
@@ -88,40 +50,20 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
           onPressed: () async {
             LoadScreen().loadingScreen(context);
 
-            Set<Map<String, String>> removeMap = {};
+            Set<Map<String, String>> removeMap = widget.group.idMusicMap;
 
-            switch (file) {
-              case 'list':
-                removeMap = widget.group.listMap;
+            await storage.update(removeMap.elementAt(index)['spotify']!);
 
-              case 'mixes':
-                removeMap = widget.group.mixesMap;
-            }
-
-            await storage.update(file, removeMap.elementAt(index)['spotify']!);
-
-            await storage.readCounter(file).then((value) {
-              switch (file) {
-                case 'list':
-                  widget.group.list = value;
-
-                case 'mixes':
-                  widget.group.mixes = value;
-              }
+            await storage.readCounter().then((value) {
+              widget.group.idMusic = value;
             }).then((value) {
-              switch (file) {
-                case 'list':
-                  widget.group.listMap
-                      .remove(widget.group.listMap.elementAt(index));
-
-                case 'mixes':
-                  widget.group.mixesMap
-                      .remove(widget.group.mixesMap.elementAt(index));
-              }
+              widget.group.idMusicMap
+                  .remove(widget.group.idMusicMap.elementAt(index));
 
               setState(() {});
-
-              Navigator.of(context).pop();
+              if (mounted) {
+                Navigator.of(context).pop();
+              }
             });
           },
           child: const Icon(
@@ -134,16 +76,7 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
   }
 
   // Botão de adicionar personalizado.
-  Future<void> add(Size size, String file) {
-    String hint = '';
-
-    switch (file) {
-      case 'list':
-        hint = 'da Lista';
-      case 'mixes':
-        hint = 'do Mix';
-    }
-
+  Future<void> add(Size size) {
     return showDialog(
         context: context,
         builder: (ctx) {
@@ -155,7 +88,7 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                     border: const OutlineInputBorder(),
                     filled: true,
                     fillColor: Colors.white,
-                    hintText: 'Coloque o ID $hint'),
+                    hintText: ' Coloque o ID do Spotify'),
                 style: TextStyle(
                   color: Colors.black,
                   fontSize: size.height * 0.02,
@@ -172,39 +105,36 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
                     final spotify = SpotifyApi(credentials);
 
                     try {
-                      await spotify.playlists
-                          .get(value)
-                          .then((valueSpotify) {});
-
-                      await ControleArquivo().writeAdd(file, value);
-
-                      await ControleArquivo().readCounter(file).then((value) {
-                        switch (file) {
-                          case 'list':
-                            widget.group.list = value;
-                          case 'mixes':
-                            widget.group.mixes = value;
+                      // Verifica se o ID existe na Playlist ou Albums.
+                      try {
+                        await spotify.playlists.get(value);
+                      } catch (error) {
+                        try {
+                          await spotify.albums.get(value);
+                        } catch (error) {
+                          throw Error;
                         }
+                      }
+
+                      await ControleArquivo().writeAdd(value);
+
+                      await ControleArquivo().readCounter().then((value) {
+                        widget.group.idMusic = value;
                       });
 
-                      await getNameFromSpotify(widget.group.get(file), {})
-                          .then((value) {
-                        switch (file) {
-                          case 'list':
-                            widget.group.listMap = value;
-                          case 'mixes':
-                            widget.group.mixesMap = value;
-                        }
-
+                      await widget.group.loadMap().then((value) {
                         setState(() {});
                       });
-
-                      Navigator.of(context).pop();
+                      if (mounted) {
+                        Navigator.of(context).pop();
+                      }
                       controller.text = '';
                     } catch (error) {
                       // caso não encontre a playlist volta para o textField.
                     }
-                    Navigator.of(context).pop();
+                    if (mounted) {
+                      Navigator.of(context).pop();
+                    }
                   }
                 },
               ),
@@ -232,266 +162,185 @@ class _TrocarPlaylistState extends State<TrocarPlaylist> {
     // Pega o tamanho da tela e armazena.
     final size = MediaQuery.of(context).size;
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(
-          'Trocar Playlist',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: size.width * 0.065,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: [
+            Colors.purple.shade900,
+            Colors.green.shade900,
+          ],
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.black.withOpacity(0.5),
+        appBar: AppBar(
+          iconTheme: const IconThemeData(color: Colors.white),
+          title: Text(
+            'Trocar Playlist',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: size.width * 0.065,
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () {
+                  // Mostra um pop-up.
+                  // Modificar o pop-up apenas para sim ou não e restaurar o ID Music.
+                  showDialog(
+                      context: context,
+                      barrierColor: Colors.black.withOpacity(0.5),
+                      builder: (ctx) {
+                        return AlertDialog(
+                          title: Text(
+                            'Deseja Restaurar?',
+                            style: TextStyle(fontSize: size.width * 0.065),
+                            textAlign: TextAlign.center,
+                          ),
+                          actions: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                TextButton(
+                                  onPressed: () async {
+                                    // Tela de Carregamento.
+                                    LoadScreen().loadingScreen(context);
+
+                                    // Explicação se encontra na Função.
+                                    await Database()
+                                        .updateDataBase()
+                                        .get()
+                                        .then((value) {
+                                      databaseBackup = value.value!;
+                                    });
+
+                                    // Explicação se encontra na Função.
+                                    await storage.delete().then((value) async {
+                                      try {
+                                        // Explicação se encontra na Função.
+                                        await ControleArquivo().writeAdd(
+                                            widget.group.limpadoraID(
+                                                databaseBackup['ID Music']));
+
+                                        // Explicação se encontra na Função.
+                                        await ControleArquivo()
+                                            .readCounter()
+                                            .then((value) {
+                                          widget.group.idMusic = value;
+                                        });
+
+                                        // Explicação se encontra na Função.
+                                        await widget.group
+                                            .loadMap()
+                                            .then((value) {
+                                          setState(() {});
+                                        });
+                                      } catch (error) {
+                                        // caso não encontre a playlist volta para o textField.
+                                      }
+                                    });
+
+                                    if (context.mounted) {
+                                      // Remove a tela que está no topo.
+                                      Navigator.of(context).pop();
+                                      // Remove a tela que está no topo.
+                                      Navigator.of(context).pop();
+                                    }
+                                  },
+                                  child: Text(
+                                    'Sim',
+                                    style: TextStyle(
+                                      fontSize: size.width * 0.07,
+                                      color: const Color.fromARGB(
+                                          255, 52, 143, 55),
+                                    ),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: Text(
+                                    'Não',
+                                    style: TextStyle(
+                                      fontSize: size.width * 0.07,
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                                )
+                              ],
+                            ),
+                          ],
+                        );
+                      });
+                },
+                child: Icon(
+                  Icons.restore,
+                  color: Colors.white,
+                  size: size.width * 0.08,
+                ))
+          ],
+          centerTitle: true,
+          backgroundColor: Colors.black,
+        ),
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Usado para centralizar o Texto e Ícone.
+                    Text('       '),
+                    // Texto Principal.
+                    Text(
+                      'ID Music',
+                      style: TextStyle(
+                        fontSize: size.width * 0.06,
+                        color: Colors.white,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                    // TextButton de + para adicionar conteúdo no ID Music.
+                    TextButton(
+                      onPressed: () {
+                        // faz o input aparecer e verificar se existe o link
+                        add(size);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        minimumSize:
+                            Size(size.width * 0.01, size.height * 0.005),
+                      ),
+                      child: const Icon(
+                        Icons.add_circle_outline,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Retângulo com nomes dos ID's.
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.white),
+                ),
+                child: SingleChildScrollView(
+                  child: SizedBox(
+                    width: size.width * 0.80,
+                    height: size.height * 0.80,
+                    child: ListView.builder(
+                        itemCount: widget.group.idMusicMap.length,
+                        itemBuilder: (ctx, index) {
+                          return rowText(size, index);
+                        }),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-              onPressed: () {
-                // Mostra um pop-up.
-                showDialog(
-                    context: context,
-                    barrierColor: Colors.black.withOpacity(0.5),
-                    builder: (ctx) {
-                      return AlertDialog(
-                        title: Text(
-                          'Restaurar',
-                          style: TextStyle(fontSize: size.width * 0.065),
-                          textAlign: TextAlign.center,
-                        ),
-                        actions: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              TextButton(
-                                onPressed: () async {
-                                  // Tela de Carregamento.
-                                  LoadScreen().loadingScreen(context);
-
-                                  // Explicação se encontra na Função.
-                                  await Database()
-                                      .updateDataBase()
-                                      .get()
-                                      .then((value) {
-                                    databaseBackup = value.value!;
-                                  });
-
-                                  // Explicação se encontra na Função.
-                                  await storage
-                                      .delete('list')
-                                      .then((value) async {
-                                    try {
-                                      // Explicação se encontra na Função.
-                                      await ControleArquivo().writeAdd(
-                                          'list', databaseBackup['Lista']);
-
-                                      // Explicação se encontra na Função.
-                                      await ControleArquivo()
-                                          .readCounter('list')
-                                          .then((value) {
-                                        widget.group.list = value;
-                                      });
-
-                                      // Explicação se encontra na Função.
-                                      await getNameFromSpotify(
-                                              widget.group.get('list'), {})
-                                          .then((value) {
-                                        widget.group.listMap = value;
-
-                                        setState(() {});
-                                      });
-                                    } catch (error) {
-                                      // caso não encontre a playlist volta para o textField.
-                                    }
-                                  });
-
-                                  if (context.mounted) {
-                                    // Remove a tela que está no topo.
-                                    Navigator.of(context).pop();
-                                    // Remove a tela que está no topo.
-                                    Navigator.of(context).pop();
-                                  }
-                                },
-                                child: Text(
-                                  'Lista',
-                                  style: TextStyle(fontSize: size.width * 0.07),
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () async {
-                                  // Tela de Carregamento.
-                                  LoadScreen().loadingScreen(context);
-
-                                  // Explicação se encontra na Função.
-                                  await Database()
-                                      .updateDataBase()
-                                      .get()
-                                      .then((value) {
-                                    databaseBackup = value.value!;
-                                  });
-
-                                  // Explicação se encontra na Função.
-                                  await storage
-                                      .delete('mixes')
-                                      .then((value) async {
-                                    try {
-                                      // Explicação se encontra na Função.
-                                      await ControleArquivo().writeAdd(
-                                          'mixes', databaseBackup['Mixes']);
-
-                                      // Explicação se encontra na Função.
-                                      await ControleArquivo()
-                                          .readCounter('mixes')
-                                          .then((value) {
-                                        widget.group.mixes = value;
-                                      });
-
-                                      // Explicação se encontra na Função.
-                                      await getNameFromSpotify(
-                                              widget.group.get('mixes'), {})
-                                          .then((value) {
-                                        widget.group.mixesMap = value;
-
-                                        setState(() {});
-                                      });
-                                    } catch (error) {
-                                      // caso não encontre a playlist volta para o textField.
-                                    }
-                                  });
-
-                                  if (context.mounted) {
-                                    // Remove a tela que está no topo.
-                                    Navigator.of(context).pop();
-                                    // Remove a tela que está no topo.
-                                    Navigator.of(context).pop();
-                                  }
-                                },
-                                child: Text(
-                                  'Mixes',
-                                  style: TextStyle(fontSize: size.width * 0.07),
-                                ),
-                              )
-                            ],
-                          ),
-                        ],
-                      );
-                    });
-              },
-              child: Icon(
-                Icons.restore,
-                color: Colors.white,
-                size: size.width * 0.08,
-              ))
-        ],
-        centerTitle: true,
-        backgroundColor: Colors.black,
-      ),
-      body: SingleChildScrollView(
-        child: Column(children: [
-          Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Texto invisível para fixar o texto principal no meio.
-                const Text(
-                  'aaa',
-                  style: TextStyle(color: Colors.transparent),
-                ),
-                // Texto Principal.
-                Text(
-                  'Lista',
-                  style: TextStyle(
-                    fontSize: size.width * 0.06,
-                    color: Colors.white,
-                    decoration: TextDecoration.none,
-                  ),
-                ),
-                // TextButton de + para adicionar conteúdo na Lista.
-                TextButton(
-                  onPressed: () {
-                    // faz o input aparecer e verificar se existe o link
-                    add(size, 'list');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: Size(size.width * 0.01, size.height * 0.005),
-                  ),
-                  child: const Icon(
-                    Icons.add_circle_outline,
-                    color: Colors.green,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Retângulo com nomes das Listas.
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.white),
-            ),
-            child: SingleChildScrollView(
-              child: SizedBox(
-                width: size.width * 0.80,
-                height: size.height * 0.37,
-                child: ListView.builder(
-                    itemCount: widget.group.listMap.length,
-                    itemBuilder: (ctx, index) {
-                      return rowText('list', size, index);
-                    }),
-              ),
-            ),
-          ),
-          // Dar um espaço entre os Widget's.
-          SizedBox(height: size.height * 0.005),
-          Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Texto invisível para fixar o texto principal no meio.
-                const Text(
-                  'aaa',
-                  style: TextStyle(color: Colors.transparent),
-                ),
-                // Texto Principal.
-                Text(
-                  'Mixes',
-                  style: TextStyle(
-                    fontSize: size.width * 0.06,
-                    color: Colors.white,
-                    decoration: TextDecoration.none,
-                  ),
-                ),
-                // TextButton de + para adicionar conteúdo no Mixes.
-                TextButton(
-                  onPressed: () {
-                    // faz o input aparecer e verificar se existe o link
-                    add(size, 'mixes');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: Size(size.width * 0.01, size.height * 0.005),
-                  ),
-                  child: const Icon(
-                    Icons.add_circle_outline,
-                    color: Colors.green,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Retângulo com nomes dos Mixes.
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.white),
-            ),
-            child: SingleChildScrollView(
-              child: SizedBox(
-                  width: size.width * 0.80,
-                  height: size.height * 0.37,
-                  child: ListView.builder(
-                      itemCount: widget.group.mixesMap.length,
-                      itemBuilder: (ctx, index) {
-                        return rowText('mixes', size, index);
-                      })),
-            ),
-          ),
-        ]),
       ),
     );
   }
