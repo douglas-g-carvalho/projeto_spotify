@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:projeto_spotify/Utils/audio_player_handler.dart';
 import 'package:projeto_spotify/Utils/constants.dart';
+
 import 'package:spotify/spotify.dart';
+
 
 //  Classe criada para deixar tudo pré-carregado após a primeira vez entrando no aplicativo.
 class Groups extends ChangeNotifier {
   // Salvando informações recebidas do Firebase.
   String token = '';
   String apelido = '';
+
+  late AudioPlayerHandler audioHandler;
 
   // List's principais usados no aplicativo.
   List<String> idMusic = [];

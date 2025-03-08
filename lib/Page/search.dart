@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:projeto_spotify/Utils/groups.dart';
 
 import 'package:projeto_spotify/Widget/search_play.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
@@ -8,7 +9,8 @@ import '../Utils/load_screen.dart';
 
 // Classe criada para pesquisar no Youtube.
 class Search extends StatefulWidget {
-  const Search({super.key});
+  final Groups group;
+  const Search({required this.group, super.key});
 
   @override
   State<Search> createState() => _SearchState();
@@ -140,6 +142,14 @@ class _SearchState extends State<Search> {
   // Procura os videos com base no que foi pesquisado.
   Future<void> searchVideos(VideoSearchList video) async {
     for (int index = 0; index < video.length; index++) {
+      // print(video[index].id);
+      // print(video[index].title);
+      // print(video[index].author);
+      // print(customizedViewCount(video[index].engagement.viewCount));
+      // print(video[index].uploadDate ?? 'Sem data');
+      // print(customizedUploadDate(video[index].uploadDate));
+      // print(customizedDataAgo(video[index].uploadDateRaw));
+      // print(customizedDuration(video[index].duration!));
       try {
         mapSearch.addAll({
           index: {
@@ -162,9 +172,9 @@ class _SearchState extends State<Search> {
 
   @override
   void initState() {
-    super.initState();
     // Atribuindo o Editor de Texto.
     controller = TextEditingController();
+    super.initState();
   }
 
   // Função do Flutter para quando a Página fechar.
@@ -263,123 +273,123 @@ class _SearchState extends State<Search> {
                       width: width,
                       height: height * 0.83,
                       child: ListView.separated(
-                        itemCount: mapSearch.length - 1,
-                        separatorBuilder: (context, index) =>
-                            SizedBox(height: height * 0.01),
-                        itemBuilder: (context, index) {
-                          return Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                                border: Border.all(color: Colors.white)),
-                            child: TextButton(
-                              style: ElevatedButton.styleFrom(
-                                  shape: const RoundedRectangleBorder()),
-                              onPressed: () {
-                                // Vai para search_play.
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => SearchPlay(
-                                      id: mapSearch[index]!['ID'] as VideoId,
-                                      title:
-                                          mapSearch[index]!['Title'] as String,
-                                      author:
-                                          mapSearch[index]!['Author'] as String,
-                                      viewCount:
-                                          mapSearch[index]!['Views'] as String,
-                                      uploadDate:
-                                          mapSearch[index]!['UploadDateString']
-                                              as String,
-                                      uploadDateRaw:
-                                          mapSearch[index]!['UploadDateRaw']
-                                              as String,
-                                      duration: mapSearch[index]!['Duration']
-                                          as String,
+                          itemCount: mapSearch.length - 1,
+                          separatorBuilder: (context, index) =>
+                              SizedBox(height: height * 0.01),
+                          itemBuilder: (context, index) {
+                            return Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.white)),
+                              child: TextButton(
+                                style: ElevatedButton.styleFrom(
+                                    shape: const RoundedRectangleBorder()),
+                                onPressed: () {
+                                  // Vai para search_play.
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => SearchPlay(
+                                        id: mapSearch[index]!['ID'] as VideoId,
+                                        title: mapSearch[index]!['Title']
+                                            as String,
+                                        author: mapSearch[index]!['Author']
+                                            as String,
+                                        viewCount: mapSearch[index]!['Views']
+                                            as String,
+                                        uploadDate: mapSearch[index]![
+                                            'UploadDateString'] as String,
+                                        uploadDateRaw:
+                                            mapSearch[index]!['UploadDateRaw']
+                                                as String,
+                                        duration: mapSearch[index]!['Duration']
+                                            as String,
+                                        group: widget.group,
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
-                              child: Row(
-                                children: [
-                                  // Ícone de nota músical.
-                                  Icon(
-                                    Icons.music_note,
-                                    color: Colors.white,
-                                    size: width * 0.1,
-                                  ),
-                                  Column(
-                                    children: [
-                                      // Título do video.
-                                      SizedBox(
-                                        width: width * 0.80,
-                                        child: Text(
-                                          textAlign: TextAlign.center,
-                                          mapSearch[index]!['Title'] as String,
-                                          style: const TextStyle(
-                                              color: Colors.white),
+                                  );
+                                },
+                                child: Row(
+                                  children: [
+                                    // Ícone de nota músical.
+                                    Icon(
+                                      Icons.music_note,
+                                      color: Colors.white,
+                                      size: width * 0.1,
+                                    ),
+                                    Column(
+                                      children: [
+                                        // Título do video.
+                                        SizedBox(
+                                          width: width * 0.80,
+                                          child: Text(
+                                            textAlign: TextAlign.center,
+                                            mapSearch[index]!['Title']
+                                                as String,
+                                            style: const TextStyle(
+                                                color: Colors.white),
+                                          ),
                                         ),
-                                      ),
-                                      // Dar um espaço entre os Widget's.
-                                      SizedBox(height: height * 0.01),
-                                      // Autor e Data.
-                                      Row(
-                                        children: [
-                                          Text(
-                                            textAlign: TextAlign.center,
-                                            mapSearch[index]!['Author']
-                                                as String,
-                                            style: const TextStyle(
-                                                color: Colors.white),
-                                          ),
-                                          SizedBox(width: width * 0.015),
-                                          Text(
-                                            textAlign: TextAlign.center,
-                                            '${mapSearch[index]!['UploadDateString']}',
-                                            style: const TextStyle(
-                                                color: Colors.white),
-                                          ),
-                                        ],
-                                      ),
-                                      // Dar um espaço entre os Widget's.
-                                      SizedBox(height: height * 0.01),
-                                      // Ícone de olho, Contagem das views e a Duração.
-                                      Row(
-                                        children: [
-                                          // Ícone de olho.
-                                          Icon(
-                                            Icons.remove_red_eye,
-                                            color: Colors.white,
-                                            size: width * 0.05,
-                                          ),
-                                          // Dar um espaço entre os Widget's.
-                                          SizedBox(width: width * 0.01),
-                                          // Contagem de views.
-                                          Text(
-                                            textAlign: TextAlign.center,
-                                            mapSearch[index]!['Views']
-                                                as String,
-                                            style: const TextStyle(
-                                                color: Colors.white),
-                                          ),
-                                          // Dar um espaço entre os Widget's.
-                                          SizedBox(width: width * 0.01),
-                                          // Duração.
-                                          Text(
-                                            textAlign: TextAlign.center,
-                                            '- Duração: ${mapSearch[index]!['Duration']}',
-                                            style: const TextStyle(
-                                                color: Colors.white),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                        // Dar um espaço entre os Widget's.
+                                        SizedBox(height: height * 0.01),
+                                        // Autor e Data.
+                                        Row(
+                                          children: [
+                                            Text(
+                                              textAlign: TextAlign.center,
+                                              mapSearch[index]!['Author']
+                                                  as String,
+                                              style: const TextStyle(
+                                                  color: Colors.white),
+                                            ),
+                                            SizedBox(width: width * 0.015),
+                                            Text(
+                                              textAlign: TextAlign.center,
+                                              '${mapSearch[index]!['UploadDateString']}',
+                                              style: const TextStyle(
+                                                  color: Colors.white),
+                                            ),
+                                          ],
+                                        ),
+                                        // Dar um espaço entre os Widget's.
+                                        SizedBox(height: height * 0.01),
+                                        // Ícone de olho, Contagem das views e a Duração.
+                                        Row(
+                                          children: [
+                                            // Ícone de olho.
+                                            Icon(
+                                              Icons.remove_red_eye,
+                                              color: Colors.white,
+                                              size: width * 0.05,
+                                            ),
+                                            // Dar um espaço entre os Widget's.
+                                            SizedBox(width: width * 0.01),
+                                            // Contagem de views.
+                                            Text(
+                                              textAlign: TextAlign.center,
+                                              mapSearch[index]!['Views']
+                                                  as String,
+                                              style: const TextStyle(
+                                                  color: Colors.white),
+                                            ),
+                                            // Dar um espaço entre os Widget's.
+                                            SizedBox(width: width * 0.01),
+                                            // Duração.
+                                            Text(
+                                              textAlign: TextAlign.center,
+                                              '- Duração: ${mapSearch[index]!['Duration']}',
+                                              style: const TextStyle(
+                                                  color: Colors.white),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
+                            );
+                          }),
                     ),
                   ),
                 // Tela de Carregamento.

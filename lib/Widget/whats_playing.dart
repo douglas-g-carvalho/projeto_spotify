@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:projeto_spotify/Utils/audio_player_handler.dart';
+import 'package:projeto_spotify/Utils/groups.dart';
 
 import '../Utils/constants.dart';
-import '../Utils/music_player.dart';
 import '../Utils/image_loader.dart';
 
 // Classe para mostrar a música quando playlist_style estiver tocando.
@@ -11,15 +12,16 @@ class WhatsPlaying extends StatefulWidget {
   // Capa da música.
   final String imageMusic;
   // Nome do artista.
-  final List<String> artistName;
+  final String artistName;
   // MusicPlayer para saber das mesmas informações que o playlist_style.
-  final MusicPlayer musicPlayer;
+  // final MusicPlayer musicPlayer;
+  final AudioPlayerHandler audioHandler;
+  // Player principal.
+  final Groups group;
   // Cores para o Gradiente.
   final List<Color>? colorBackground;
   // Para saber quando mudar o ícone do botão Play para carregamento.
   final bool loading;
-  // Necessário para o ProgressBar.
-  final Function(bool) loadingMaster;
   // Duração da música.
   final Duration duration;
   // Para fechar o What's Playing caso o usuário queira.
@@ -32,9 +34,9 @@ class WhatsPlaying extends StatefulWidget {
     required this.imageMusic,
     required this.artistName,
     required this.colorBackground,
-    required this.musicPlayer,
+    required this.audioHandler,
+    required this.group,
     required this.loading,
-    required this.loadingMaster,
     required this.duration,
     required this.stopWidget,
   });
@@ -97,55 +99,35 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                 // Botão de (Desativado / AutoPlay / Repetir).
                 TextButton(
                   onPressed: () {
-                    // Verifica em qual modo se encontra.
-                    switch (widget.musicPlayer.repeatType) {
-                      // Caso esteja em desativado.
-                      case 0:
-                        // Ativa o autoPlay.
-                        widget.musicPlayer.autoPlay = true;
-                        // Aumenta o número do repeatType.
-                        widget.musicPlayer.repeatType += 1;
-                      case 1:
-                        // Ativa o Repetir.
-                        widget.musicPlayer.repeat = true;
-                        // Desativa o autoPlay.
-                        widget.musicPlayer.autoPlay = false;
-                        // Aumenta o número do repeatType.
-                        widget.musicPlayer.repeatType += 1;
-                      case 2:
-                        // Desativa o Repetir.
-                        widget.musicPlayer.repeat = false;
-                        // Reseta o número do repeatType.
-                        widget.musicPlayer.repeatType = 0;
-                    }
-        
-                    // Atualiza a tela.
+                    // Trocar os modos entre (desativado, tocar próxima ou repetir).
+                    widget.group.audioHandler.trueRepeatMode();
+                    // Atualizar a tela.
                     setState(() {});
                   },
                   child: Icon(
-                    widget.musicPlayer.repeatType == 0
+                    widget.group.audioHandler.repeat == 0
                         ? Icons.repeat
-                        : widget.musicPlayer.repeatType == 1
+                        : widget.group.audioHandler.repeat == 1
                             ? Icons.repeat
                             : Icons.repeat_one,
-                    size: width * 0.078,
-                    color: widget.musicPlayer.repeatType == 0
+                    size: width * 0.10,
+                    color: widget.group.audioHandler.repeat == 0
                         ? Colors.white
-                        : widget.musicPlayer.repeatType == 1
+                        : widget.group.audioHandler.repeat == 1
                             ? Constants.color
                             : Constants.color,
                   ),
                 ),
-                // Botão de Shuffle (Aleatório).
+                // // Botão de Shuffle (Aleatório).
                 TextButton(
                   onPressed: () {
-                    widget.musicPlayer.shuffle = !widget.musicPlayer.shuffle;
+                    widget.audioHandler.trueShuffleMode();
                     setState(() {});
                   },
                   child: Icon(
                     Icons.shuffle,
-                    size: width * 0.078,
-                    color: widget.musicPlayer.shuffle
+                    size: width * 0.10,
+                    color: widget.audioHandler.shuffle
                         ? Constants.color
                         : Colors.white,
                   ),
@@ -185,14 +167,16 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                         child: Text(
                           textAlign: TextAlign.center,
                           overflow: TextOverflow.ellipsis,
-                          widget.musicPlayer.textArtists(widget.artistName),
+                          widget.artistName,
                           style: TextStyle(
                               color: Colors.white, fontSize: width * 0.045),
                         ),
                       ),
                       // Barra de progresso da música.
-                      widget.musicPlayer
-                          .progressBar(size.width * 0.55, widget.loadingMaster),
+                      SizedBox(
+                          width: size.width * 0.50,
+                          child: widget.group.audioHandler
+                              .customizeStreamBuilder()),
                     ],
                   ),
                   // Dar um espaço entre os Widget's.
@@ -200,14 +184,16 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                   Stack(
                     children: [
                       // Ícone de Play e Carregamento.
-                      widget.loading
+                      (widget.loading ||
+                              widget.group.audioHandler.stateLoading ==
+                                  'loading')
                           ? SizedBox(
                               width: ((width + height) * 0.047),
                               height: ((width + height) * 0.047),
                               child: const CircularProgressIndicator(
                                   color: Constants.color))
                           : Icon(
-                              (widget.musicPlayer.player.playing)
+                              widget.group.audioHandler.playing
                                   ? Icons.pause
                                   : Icons.play_arrow,
                               color: Constants.color,
@@ -224,22 +210,12 @@ class _WhatsPlayingState extends State<WhatsPlaying> {
                           onPressed: () {
                             // Caso carregar seja false.
                             if (!widget.loading) {
-                              // Caso a música esteja completa.
-                              if (widget.musicPlayer.musicaCompletada()) {
-                                // Manda o player para o ínicio.
-                                widget.musicPlayer.player.seek(Duration.zero);
-                                // Manda a música para o ínicio.
-                                setState(() =>
-                                    widget.musicPlayer.musica = Duration.zero);
-                              }
-                              // Explicação no ínicio da classe.
-                              widget.loadingMaster(true);
-        
                               // Dar play na música.
-                              widget.musicPlayer.play().then((value) {
-                                // Explicação no ínicio da classe.
-                                widget.loadingMaster(false);
-                              });
+                              if (!widget.audioHandler.playing) {
+                                widget.audioHandler.play();
+                              } else {
+                                widget.audioHandler.pause();
+                              }
                             }
                           },
                           child: SizedBox(

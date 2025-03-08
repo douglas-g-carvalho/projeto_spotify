@@ -115,8 +115,10 @@ class _SelectMusicState extends State<SelectMusic> {
                               context,
                               MaterialPageRoute(
                                   builder: (_) => PlayStyle(
-                                      trackId: widget.group.idMusicMap
-                                          .elementAt(index)['spotify']!)));
+                                        trackId: widget.group.idMusicMap
+                                            .elementAt(index)['spotify']!,
+                                        group: widget.group,
+                                      )));
                         }
                       },
                       style: ElevatedButton.styleFrom(

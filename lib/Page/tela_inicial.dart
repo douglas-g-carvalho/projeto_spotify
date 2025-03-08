@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:projeto_spotify/Utils/load_screen.dart';
-import 'package:projeto_spotify/Widget/select_music.dart';
+import 'package:projeto_spotify/Page/select_music.dart';
 import 'package:projeto_spotify/Page/trocar_playlist.dart';
 
 import '../Utils/constants.dart';

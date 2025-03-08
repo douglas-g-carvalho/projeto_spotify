@@ -1,10 +1,12 @@
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 
-import 'package:projeto_spotify/Utils/music_player.dart';
+// import 'package:projeto_spotify/Utils/music_player.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 import '../Utils/constants.dart';
+import '../Utils/groups.dart';
 
 // Classe para dar play nos vídeos da Página Search.
 class SearchPlay extends StatefulWidget {
@@ -16,6 +18,7 @@ class SearchPlay extends StatefulWidget {
   final String uploadDate;
   final String uploadDateRaw;
   final String duration;
+  final Groups group;
   // Básico da classe.
   const SearchPlay({
     super.key,
@@ -26,6 +29,7 @@ class SearchPlay extends StatefulWidget {
     required this.uploadDate,
     required this.uploadDateRaw,
     required this.duration,
+    required this.group,
   });
 
   @override
@@ -34,11 +38,11 @@ class SearchPlay extends StatefulWidget {
 
 class _SearchPlayState extends State<SearchPlay> {
   // Fonte de dados das músicas.
-  MusicPlayer musicPlayer = MusicPlayer();
+  // late widget.group.audioHandler widget.group.audioHandler;
   // Loading para o player.
   bool loading = false;
   // inicia nulo e apenas depois da Função audioIsOn se torna o áudio do vídeo.
-  dynamic audioUrl;
+  bool? audioReady;
 
   // Função para progressBar conseguir mostrar quando está carregando.
   loadingMaster(bool value) {
@@ -84,14 +88,21 @@ class _SearchPlayState extends State<SearchPlay> {
   // Função para carregar o áudio.
   Future<void> audioIsOn() async {
     // Se o áudio estiver nulo.
-    if (audioUrl == null) {
+    if (audioReady == null) {
       // Pesquisa pelo ID do vídeo.
       var manifest =
           await YoutubeExplode().videos.streamsClient.getManifest(widget.id);
       // Pega a URL do vídeo.
-      audioUrl = manifest.audioOnly.last.url;
       // Carrega o áudio da URL no player.
-      await musicPlayer.player.setAudioSource(AudioSource.uri(audioUrl));
+      widget.group.audioHandler.setAudioSource(
+        AudioSource.uri(manifest.audioOnly.last.url),
+        {
+          'album': widget.author,
+          'duration': stringToDuration(widget.duration),
+          'title': widget.title,
+        },
+      );
+      audioReady = true;
     }
   }
 
@@ -99,7 +110,7 @@ class _SearchPlayState extends State<SearchPlay> {
   @override
   void dispose() {
     // Limpa o player quando sair do search_play.
-    musicPlayer.player.dispose();
+    widget.group.audioHandler.dispose();
     super.dispose();
   }
 
@@ -112,171 +123,181 @@ class _SearchPlayState extends State<SearchPlay> {
     // Salva o height.
     final double height = size.height;
 
-    // Se o mapDuration está vazio.
-    if (musicPlayer.mapDuration.isEmpty) {
+    // Se o durationMusic está vazio.
+    if (widget.group.audioHandler.durationMusic.isEmpty) {
       // Adiciona o título.
-      musicPlayer.songList.addAll({widget.title});
+      widget.group.audioHandler.songList.addAll({widget.title});
       // Adiciona a duração.
-      musicPlayer.mapDuration
-          .addAll({widget.title: stringToDuration(widget.duration)});
+      widget.group.audioHandler.durationMusic
+          .addAll({0: stringToDuration(widget.duration)});
     }
 
     return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        title: Text(
-          textAlign: TextAlign.center,
-          widget.author,
-          style: const TextStyle(color: Colors.white),
+        appBar: AppBar(
+          centerTitle: true,
+          title: Text(
+            textAlign: TextAlign.center,
+            widget.author,
+            style: const TextStyle(color: Colors.white),
+          ),
+          iconTheme: const IconThemeData(color: Colors.white),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: Center(
-        child: Column(
-          children: [
-            // Adiciona um espaço caso não tenha data do vídeo.
-            if (widget.uploadDate == '- Sem data')
-              SizedBox(height: height * 0.001),
-            // Ícone music_video já que não tem capa.
-            Icon(
-              Icons.music_video,
-              size: width * 0.75,
-              color: Colors.white,
-            ),
-            // Título.
-            SizedBox(
-              width: width * 0.90,
-              child: Text(
-                widget.title,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: width * 0.065,
-                ),
-              ),
-            ),
-            // Dar um espaço entre os Widget's.
-            SizedBox(height: height * 0.01),
-            // Contagem de views.
-            Text(
-              textAlign: TextAlign.center,
-              widget.viewCount,
-              style: TextStyle(color: Constants.color, fontSize: width * 0.06),
-            ),
-            // Dar um espaço entre os Widget's.
-            SizedBox(height: height * 0.01),
-            // Caso tenha data do vídeo.
-            if (widget.uploadDate != '- Sem data')
-              //  Data do vídeo e Data de quanto tempo o vídeo foi enviado.
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+        body: StreamBuilder<PlaybackState>(
+          stream: widget.group.audioHandler.playbackState,
+          builder: (context, snapshot) {
+            return Center(
+              child: Column(
                 children: [
-                  // Data de quanto tempo o vídeo foi enviado.
+                  // Adiciona um espaço caso não tenha data do vídeo.
+                  if (widget.uploadDate == '- Sem data')
+                    SizedBox(height: height * 0.001),
+                  // Ícone music_video já que não tem capa.
+                  Icon(
+                    Icons.music_video,
+                    size: width * 0.75,
+                    color: Colors.white,
+                  ),
+                  // Título.
+                  SizedBox(
+                    width: width * 0.90,
+                    child: Text(
+                      widget.title,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: width * 0.065,
+                      ),
+                    ),
+                  ),
+                  // Dar um espaço entre os Widget's.
+                  SizedBox(height: height * 0.01),
+                  // Contagem de views.
                   Text(
                     textAlign: TextAlign.center,
-                    widget.uploadDateRaw,
+                    widget.viewCount,
                     style: TextStyle(
                         color: Constants.color, fontSize: width * 0.06),
                   ),
-                  //  Data do vídeo.
-                  Text(
-                    textAlign: TextAlign.center,
-                    widget.uploadDate,
-                    style: TextStyle(
-                        color: Constants.color, fontSize: width * 0.06),
+                  // Dar um espaço entre os Widget's.
+                  SizedBox(height: height * 0.01),
+                  // Caso tenha data do vídeo.
+                  if (widget.uploadDate != '- Sem data')
+                    //  Data do vídeo e Data de quanto tempo o vídeo foi enviado.
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Data de quanto tempo o vídeo foi enviado.
+                        Text(
+                          textAlign: TextAlign.center,
+                          widget.uploadDateRaw,
+                          style: TextStyle(
+                              color: Constants.color, fontSize: width * 0.06),
+                        ),
+                        //  Data do vídeo.
+                        Text(
+                          textAlign: TextAlign.center,
+                          widget.uploadDate,
+                          style: TextStyle(
+                              color: Constants.color, fontSize: width * 0.06),
+                        ),
+                      ],
+                    ),
+                  // Dar um espaço entre os Widget's.
+                  SizedBox(height: height * 0.01),
+                  // Barra de progresso da música.
+                  SizedBox(
+                    width: size.width * 0.80,
+                    child: widget.group.audioHandler.customizeStreamBuilder()
+                  ),
+                  // Modo shuffle desativado (para deixar tudo centralizado), botão de Play e modo repetir.
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Shuffle (para deixar centralizado).
+                      TextButton(
+                        onPressed: () {},
+                        style: const ButtonStyle(
+                            splashFactory: NoSplash.splashFactory),
+                        child: Icon(
+                          Icons.shuffle,
+                          size: width * 0.12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      // Botão de Play.
+                      TextButton(
+                        onPressed: () async {
+                          // atualiza a tela e o bool loading.
+                          setState(() => loading = true);
+                          // Faz uma checagem para caso o áudio não tenha sido carregado.
+                          await audioIsOn();
+
+                          if (!widget.group.audioHandler.playing) {
+                            // Começa a tocar a música.
+                            await widget.group.audioHandler.play();
+                          } else {
+                            await widget.group.audioHandler.pause();
+                          }
+
+                          // Atualiza a tela e o bool loading.
+                          setState(() => loading = false);
+                        },
+                        child: Stack(
+                          children: [
+                            Icon(
+                              widget.group.audioHandler.playing
+                                  ? Icons.pause_circle_outline
+                                  : Icons.play_circle_outline,
+                              size: width * 0.38,
+                              color: loading
+                                  ? Colors.transparent
+                                  : Constants.color,
+                            ),
+                            if (loading)
+                              Positioned(
+                                top: width * 0.04,
+                                right: width * 0.04,
+                                child: SizedBox(
+                                  width: width * 0.30,
+                                  height: height * 0.14,
+                                  child: const CircularProgressIndicator(
+                                    color: Constants.color,
+                                  ),
+                                ),
+                              )
+                          ],
+                        ),
+                      ),
+                      // Repetir.
+                      TextButton(
+                        onPressed: () async {
+                          // Troca o bool do repetir.
+                          if (widget.group.audioHandler.repeat != 2) {
+                           await widget.group.audioHandler.trueRepeatMode();
+                           await widget.group.audioHandler.trueRepeatMode();
+                          } else {
+                           await widget.group.audioHandler.trueRepeatMode();
+                          }
+                          // Atualiza a tela.
+                          setState(() {});
+                        },
+                        child: Icon(
+                          widget.group.audioHandler.repeat == 2
+                              ? Icons.repeat_one
+                              : Icons.repeat,
+                          size: width * 0.12,
+                          color: widget.group.audioHandler.repeat == 2
+                              ? Constants.color
+                              : Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            // Dar um espaço entre os Widget's.
-            SizedBox(height: height * 0.01),
-            // Barra de progresso da música.
-            musicPlayer.progressBar(width * 0.80, loadingMaster),
-            // Modo shuffle desativado (para deixar tudo centralizado), botão de Play e modo repetir.
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Shuffle (para deixar centralizado).
-                TextButton(
-                  onPressed: () {},
-                  style:
-                      const ButtonStyle(splashFactory: NoSplash.splashFactory),
-                  child: Icon(
-                    Icons.shuffle,
-                    size: width * 0.12,
-                    color: Colors.grey,
-                  ),
-                ),
-                // Botão de Play.
-                TextButton(
-                  onPressed: () async {
-                    // atualiza a tela e o bool loading.
-                    setState(() => loading = true);
-                    // Faz uma checagem para caso o áudio não tenha sido carregado.
-                    await audioIsOn();
-
-                    // Se a música estiver completa.
-                    if (musicPlayer.musicaCompletada()) {
-                      // Vai para o ínicio da barra de progresso.
-                      musicPlayer.player.seek(Duration.zero);
-                      // Atualiza a tela e a música para o ínicio.
-                      setState(() => musicPlayer.musica = Duration.zero);
-                    }
-
-                    // Se o player estiver pausado ou parado.
-                    if (!musicPlayer.player.playing) {
-                      // Começa a tocar a música.
-                      musicPlayer.player.play();
-                    } else {
-                      // Pausa a música.
-                      await musicPlayer.player.pause();
-                    }
-                    // Atualiza a tela e o bool loading.
-                    setState(() => loading = false);
-                  },
-                  child: Stack(
-                    children: [
-                      Icon(
-                        musicPlayer.player.playing
-                            ? Icons.pause_circle_outline
-                            : Icons.play_circle_outline,
-                        size: width * 0.38,
-                        color: loading ? Colors.transparent : Constants.color,
-                      ),
-                      if (loading)
-                        Positioned(
-                          top: width * 0.04,
-                          right: width * 0.04,
-                          child: SizedBox(
-                            width: width * 0.30,
-                            height: height * 0.14,
-                            child: const CircularProgressIndicator(
-                              color: Constants.color,
-                            ),
-                          ),
-                        )
-                    ],
-                  ),
-                ),
-                // Repetir.
-                TextButton(
-                  onPressed: () {
-                    // Troca o bool do repetir.
-                    musicPlayer.repeat = !musicPlayer.repeat;
-                    // Atualiza a tela.
-                    setState(() {});
-                  },
-                  child: Icon(
-                    musicPlayer.repeat ? Icons.repeat_one : Icons.repeat,
-                    size: width * 0.12,
-                    color: musicPlayer.repeat ? Constants.color : Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
+            );
+          },
+        ));
   }
 }
