@@ -31,13 +31,11 @@ class _PlayStyleState extends State<PlayStyle> {
   bool changeMode = false;
   // Loading para o player.
   bool loading = false;
-  // IndexFake para mostrar que está carregando.
-  int indexFake = 0;
   // Para saber quando está tocando música.
   bool isPlaying = false;
 
   // Play customizado para Single Mode ou ListView's Mode.
-  Future<void> play([index]) async {
+  Future<void> play([int? index]) async {
     if (!changeMode) {
       // ListView's Mode.
 
@@ -47,7 +45,15 @@ class _PlayStyleState extends State<PlayStyle> {
         if (widget.group.audioHandler.playing) {
           widget.group.audioHandler.pause();
         }
-        await widget.group.audioHandler.loadMusic(index);
+
+        if (!widget.group.audioHandler.listMusic.containsKey(index)) {
+          await widget.group.audioHandler.loadMusic(index!);
+        } else {
+          await widget.group.audioHandler.setAudioSolo(
+            widget.group.audioHandler.playlist,
+            index!,
+          );
+        }
       }
 
       if (!widget.group.audioHandler.playing) {
@@ -57,8 +63,10 @@ class _PlayStyleState extends State<PlayStyle> {
       } else {
         widget.group.audioHandler.pause();
       }
+
       setState(() => loading = false);
     } else {
+      // Single Mode.
       setState(() => loading = true);
 
       if (!widget.group.audioHandler.playing) {
@@ -68,16 +76,6 @@ class _PlayStyleState extends State<PlayStyle> {
       }
       setState(() => loading = false);
     }
-  }
-
-  // Atualiza a tela com base na notificação.
-  Future<bool?> updateScreen() async {
-    if (widget.group.audioHandler.stateLoading == 'loading') {
-      return true;
-    } else if (widget.group.audioHandler.stateLoading == 'ready') {
-      return false;
-    }
-    return null;
   }
 
   // Pega as informações da Playlist/Albums.
@@ -219,10 +217,6 @@ class _PlayStyleState extends State<PlayStyle> {
         body: StreamBuilder<PlaybackState>(
           stream: widget.group.audioHandler.playbackState,
           builder: (context, snapshot) {
-            if (widget.group.audioHandler.lastIndex != indexFake) {
-              indexFake = widget.group.audioHandler.lastIndex ?? 0;
-            }
-
             return widget.group.audioHandler.songList.isEmpty
                 ? LoadScreen().loadingNormal(size)
                 : changeMode
@@ -307,7 +301,10 @@ class _PlayStyleState extends State<PlayStyle> {
                                         // Passar música para Esquerda.
                                         TextButton(
                                           onPressed: () async {
-                                            if (!loading) {
+                                            if (!loading ||
+                                                widget.group.audioHandler
+                                                        .stateLoading !=
+                                                    'loading') {
                                               if (widget.group.audioHandler
                                                       .lastIndex !=
                                                   0) {
@@ -329,7 +326,12 @@ class _PlayStyleState extends State<PlayStyle> {
                                             color: widget.group.audioHandler
                                                         .lastIndex !=
                                                     0
-                                                ? loading
+                                                ? (loading ||
+                                                        widget
+                                                                .group
+                                                                .audioHandler
+                                                                .stateLoading ==
+                                                            'loading')
                                                     ? Colors.white54
                                                     : Colors.white
                                                 : Colors.red,
@@ -349,8 +351,13 @@ class _PlayStyleState extends State<PlayStyle> {
                                                       .group.audioHandler
                                                       .loadMusic(0);
                                                 }
-                                                // Explicação se encontra na função.
-                                                await play();
+                                                if (!loading ||
+                                                    widget.group.audioHandler
+                                                            .stateLoading !=
+                                                        'loading') {
+                                                  // Explicação se encontra na função.
+                                                  await play();
+                                                }
                                               },
                                               child: Icon(
                                                 widget.group.audioHandler
@@ -395,7 +402,10 @@ class _PlayStyleState extends State<PlayStyle> {
                                         // Passar música para Direita.
                                         TextButton(
                                           onPressed: () async {
-                                            if (!loading) {
+                                            if (!loading ||
+                                                widget.group.audioHandler
+                                                        .stateLoading !=
+                                                    'loading') {
                                               if (widget.group.audioHandler
                                                       .lastIndex !=
                                                   widget.group.audioHandler
@@ -425,7 +435,12 @@ class _PlayStyleState extends State<PlayStyle> {
                                                     widget.group.audioHandler
                                                             .songList.length -
                                                         1
-                                                ? loading
+                                                ? (loading ||
+                                                        widget
+                                                                .group
+                                                                .audioHandler
+                                                                .stateLoading ==
+                                                            'loading')
                                                     ? Colors.white54
                                                     : Colors.white
                                                 : Colors.red,
@@ -597,7 +612,6 @@ class _PlayStyleState extends State<PlayStyle> {
                                             ),
                                             onPressed: () async {
                                               if (loading == false) {
-                                                indexFake = index;
                                                 // Explicação se encontra na função.
                                                 await play(index);
                                               }
@@ -607,7 +621,11 @@ class _PlayStyleState extends State<PlayStyle> {
                                                 Icon(
                                                   (widget.group.audioHandler
                                                               .playing &&
-                                                          indexFake == index)
+                                                          widget
+                                                                  .group
+                                                                  .audioHandler
+                                                                  .listViewIndex ==
+                                                              index)
                                                       ? Icons.pause_circle
                                                       : Icons.play_circle,
                                                   color: (loading ||
@@ -626,7 +644,9 @@ class _PlayStyleState extends State<PlayStyle> {
                                                                 .audioHandler
                                                                 .stateLoading ==
                                                             'loading') &&
-                                                    indexFake == index)
+                                                    widget.group.audioHandler
+                                                            .listViewIndex ==
+                                                        index)
                                                   Positioned(
                                                     top: height * 0.008,
                                                     right: width * 0.015,
