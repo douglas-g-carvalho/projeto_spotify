@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:projeto_spotify/Utils/load_screen.dart';
 import 'package:projeto_spotify/Page/select_music.dart';
 import 'package:projeto_spotify/Page/trocar_playlist.dart';
 
-import '../Utils/constants.dart';
 import '../Utils/controle_arquivo.dart';
-import '../Utils/database.dart';
+import '../Utils/efficiency_utils.dart';
 import '../Utils/groups.dart';
 
 // Classe que serve como Tela Principal.
@@ -46,9 +44,11 @@ class _TelaInicialState extends State<TelaInicial> {
       widget.group.token = FirebaseAuth.instance.currentUser!.uid;
       String idMusic = '';
 
-      await Database().dbRef.get().then((value) {
-        Map info =
-            value.child(FirebaseAuth.instance.currentUser!.uid).value as Map;
+      await widget.group.dbRef.dbRefInfo
+          .child(FirebaseAuth.instance.currentUser!.uid)
+          .get()
+          .then((value) {
+        Map info = value.value as Map;
 
         widget.group.apelido = info['Apelido'];
         idMusic = info['ID Music'];
@@ -99,219 +99,242 @@ class _TelaInicialState extends State<TelaInicial> {
   Widget build(BuildContext context) {
     // Pega o tamanho da tela e armazena.
     final size = MediaQuery.of(context).size;
+    final appBarSize = MediaQuery.of(context).padding.top;
 
-    return Container(
-      decoration: BoxDecoration(
-          gradient: LinearGradient(
-              begin: Alignment.bottomLeft,
-              end: Alignment.topRight,
-              colors: [Colors.blue, Colors.yellow])),
-      child: Scaffold(
-        backgroundColor: Colors.black.withOpacity(0.75),
-        appBar: AppBar(
-          title: Text(
-            (!isLoading) ? widget.group.apelido : '',
-            style: TextStyle(color: Colors.white),
+    return Scaffold(
+      appBar: AppBar(
+        toolbarHeight: appBarSize,
+        backgroundColor: Colors.black,
+        leading: TextButton(
+          onPressed: null,
+          child: Icon(
+            Icons.ac_unit_outlined,
+            color: Colors.transparent,
           ),
-          centerTitle: true,
-          leading: TextButton(
-            onPressed: () {
-              if (!isLoading) {
-                // Vai para trocar_playlist.
-                Navigator.of(context)
-                    .push(MaterialPageRoute(
-                        builder: (context) => TrocarPlaylist(
-                              group: widget.group,
-                            )))
-                    .then((value) async {
-                  if (context.mounted) {
-                    // Tela de Carregamento.
-                    LoadScreen().loadingScreen(context);
-                  }
-
-                  bool loadAgain = false;
-
-                  if (widget.group.get().length != backupIdMusic.length) {
-                    await updateMap();
-                    backupIdMusic = widget.group.get();
-                    loadAgain = true;
-                  }
-
-                  // Caso ID Music seja modificado.
-                  if (loadAgain) {
-                    // Pega o ID Music salvado no cache.
-                    String idMusic = await ControleArquivo().getFile();
-
-                    // Faz update nos dados do Firebase.
-                    Database().updateDataBase().update({
-                      'Apelido': widget.group.apelido,
-                      'ID Music': widget.group.limpadoraID(idMusic),
-                    });
-                  }
-
-                  if (context.mounted) {
-                    // vai para tela_inicial.
-                    Navigator.of(context).pushNamed('/inicio');
-                  }
-                });
-              }
-            },
-            child: Icon(
-              Icons.add,
-              color: isLoading ? Colors.green.withOpacity(0.5) : Colors.green,
+        ),
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+            gradient: LinearGradient(
+                begin: Alignment.bottomLeft,
+                end: Alignment.topRight,
+                colors: [Colors.blue, Colors.yellow])),
+        child: Scaffold(
+          backgroundColor: Colors.black.withOpacity(0.75),
+          appBar: AppBar(
+            title: Text(
+              (!isLoading) ? widget.group.apelido : '',
+              style: TextStyle(color: Colors.white),
             ),
-          ),
-          actions: [
-            TextButton(
-                onPressed: () {
-                  if (!isLoading) {
-                    // Aparece um pop-up.
-                    showDialog(
-                        context: context,
-                        builder: (ctx) {
-                          return AlertDialog(
-                            title: Text(
-                              'Tem certeza?',
-                              style: TextStyle(fontSize: size.height * 0.03),
-                              textAlign: TextAlign.center,
-                            ),
-                            actions: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceAround,
-                                children: [
-                                  TextButton(
-                                      onPressed: () {
-                                        // Vai para tela_login.
-                                        Navigator.of(context).pushNamed('/');
-                                      },
-                                      child: Text(
-                                        'Sim',
-                                        style: TextStyle(
-                                          fontSize: size.height * 0.025,
-                                          color: const Color.fromARGB(
-                                              255, 52, 143, 55),
-                                        ),
-                                      )),
-                                  TextButton(
-                                      onPressed: () {
-                                        // Remove a tela que está no topo.
-                                        Navigator.of(context).pop();
-                                      },
-                                      child: Text(
-                                        'Não',
-                                        style: TextStyle(
-                                          fontSize: size.height * 0.025,
-                                          color: Colors.red,
-                                        ),
-                                      )),
-                                ],
+            centerTitle: true,
+            leading: TextButton(
+              onPressed: () {
+                if (!isLoading) {
+                  // Vai para trocar_playlist.
+                  Navigator.of(context)
+                      .push(MaterialPageRoute(
+                          builder: (context) => TrocarPlaylist(
+                                group: widget.group,
+                              )))
+                      .then((value) async {
+                    if (context.mounted) {
+                      // Tela de Carregamento.
+                      LoadScreen().loadingScreen(context);
+                    }
+
+                    bool loadAgain = false;
+
+                    for (String index in backupIdMusic) {
+                      if (!widget.group.get().contains(index) ||
+                          widget.group.get().length != backupIdMusic.length) {
+                        await updateMap();
+                        backupIdMusic = widget.group.get();
+                        loadAgain = true;
+                        break;
+                      }
+                    }
+
+                    // Caso ID Music seja modificado.
+                    if (loadAgain) {
+                      // Pega o ID Music salvado no cache.
+                      String idMusic = await ControleArquivo().getFile();
+
+                      // Faz update nos dados do Firebase.
+                      widget.group.dbRef.updateDataBase().update({
+                        'Apelido': widget.group.apelido,
+                        'ID Music': widget.group.limpadoraID(idMusic),
+                      });
+                    }
+
+                    if (context.mounted) {
+                      // vai para tela_inicial.
+                      Navigator.of(context).pushNamed('/inicio');
+                    }
+                  });
+                }
+              },
+              child: Icon(
+                Icons.add,
+                color: isLoading ? Colors.green.withOpacity(0.5) : Colors.green,
+              ),
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () {
+                    if (!isLoading) {
+                      // Aparece um pop-up.
+                      showDialog(
+                          context: context,
+                          builder: (ctx) {
+                            return AlertDialog(
+                              title: Text(
+                                'Tem certeza?',
+                                style: TextStyle(fontSize: size.height * 0.03),
+                                textAlign: TextAlign.center,
                               ),
-                            ],
-                          );
-                        });
-                  }
-                },
-                child:
-                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Text(
-                    'Deslogar ',
-                    style: TextStyle(
-                      fontSize: size.height * 0.018,
-                      color:
-                          isLoading ? Colors.red.withOpacity(0.5) : Colors.red,
-                    ),
+                              actions: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
+                                  children: [
+                                    TextButton(
+                                        onPressed: () {
+                                          // Vai para tela_login.
+                                          Navigator.of(context).pushNamed('/');
+                                        },
+                                        child: Text(
+                                          'Sim',
+                                          style: TextStyle(
+                                            fontSize: size.height * 0.025,
+                                            color: const Color.fromARGB(
+                                                255, 52, 143, 55),
+                                          ),
+                                        )),
+                                    TextButton(
+                                        onPressed: () {
+                                          // Remove a tela que está no topo.
+                                          Navigator.of(context).pop();
+                                        },
+                                        child: Text(
+                                          'Não',
+                                          style: TextStyle(
+                                            fontSize: size.height * 0.025,
+                                            color: Colors.red,
+                                          ),
+                                        )),
+                                  ],
+                                ),
+                              ],
+                            );
+                          });
+                    }
+                  },
+                  child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Deslogar ',
+                          style: TextStyle(
+                            fontSize: size.height * 0.018,
+                            color: isLoading
+                                ? Colors.red.withOpacity(0.5)
+                                : Colors.red,
+                          ),
+                        ),
+                        Icon(
+                          Icons.logout,
+                          color: isLoading
+                              ? Colors.red.withOpacity(0.5)
+                              : Colors.red,
+                        ),
+                      ])),
+            ],
+          ),
+          bottomNavigationBar: BottomNavigationBar(
+            backgroundColor: Colors.black,
+            selectedIconTheme: const IconThemeData(color: Constants.color),
+            unselectedIconTheme: const IconThemeData(color: Colors.white),
+            selectedItemColor: Constants.color,
+            unselectedItemColor: Colors.white,
+            currentIndex: 0,
+            items: [
+              BottomNavigationBarItem(
+                  icon: Icon(
+                    Icons.home_outlined,
+                    color: isLoading
+                        ? Constants.color.withOpacity(0.5)
+                        : Constants.color,
                   ),
-                  Icon(
-                    Icons.logout,
-                    color: isLoading ? Colors.red.withOpacity(0.5) : Colors.red,
+                  label: 'Inicio'),
+              BottomNavigationBarItem(
+                  icon: Icon(
+                    Icons.search,
+                    color: isLoading
+                        ? Colors.white.withOpacity(0.5)
+                        : Colors.white,
                   ),
-                ])),
-          ],
-        ),
-        bottomNavigationBar: BottomNavigationBar(
-          backgroundColor: Colors.black,
-          selectedIconTheme: const IconThemeData(color: Constants.color),
-          unselectedIconTheme: const IconThemeData(color: Colors.white),
-          selectedItemColor: Constants.color,
-          unselectedItemColor: Colors.white,
-          currentIndex: 0,
-          items: [
-            BottomNavigationBarItem(
-                icon: Icon(
-                  Icons.home_outlined,
-                  color: isLoading
-                      ? Constants.color.withOpacity(0.5)
-                      : Constants.color,
-                ),
-                label: 'Inicio'),
-            BottomNavigationBarItem(
-                icon: Icon(
-                  Icons.search,
-                  color:
-                      isLoading ? Colors.white.withOpacity(0.5) : Colors.white,
-                ),
-                label: 'Buscar'),
-          ],
-          onTap: isLoading
-              ? null
-              : (value) {
-                  switch (value) {
-                    case 0:
-                      Navigator.pushNamed(context, '/inicio');
-                    case 1:
-                      Navigator.pushNamed(context, '/buscar');
-                  }
-                },
-        ),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            child: isLoading
-                // Tela de Carregamento
-                ? LoadScreen().loadingNormal(size)
-                : (mapIdMusic.isEmpty)
-                    // Logo (em preto e branco) e Texto avisando que a lista está vazia.
-                    ? Center(
-                        heightFactor: 2.1,
-                        child: Column(
-                          children: [
-                            // Coloca o ícone com as cores preto e branco na tela com tamaho especificado e forma oval.
-                            SizedBox(
-                              height: size.height * 0.30,
-                              child: ClipOval(
-                                child: ColorFiltered(
-                                  colorFilter: ColorFilter.mode(
-                                      Colors.grey, BlendMode.saturation),
-                                  child: Image.asset('assets/icon.png'),
+                  label: 'Buscar'),
+            ],
+            onTap: isLoading
+                ? null
+                : (value) {
+                    switch (value) {
+                      case 0:
+                        Navigator.pushNamed(context, '/inicio');
+                      case 1:
+                        Navigator.pushNamed(context, '/buscar');
+                    }
+                  },
+          ),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              child: isLoading
+                  // Tela de Carregamento
+                  ? LoadScreen().loadingNormal(size)
+                  : (mapIdMusic.isEmpty)
+                      // Logo (em preto e branco) e Texto avisando que a lista está vazia.
+                      ? Center(
+                          heightFactor: 2.1,
+                          child: Column(
+                            children: [
+                              // Coloca o ícone com as cores preto e branco na tela com tamaho especificado e forma oval.
+                              SizedBox(
+                                height: size.height * 0.30,
+                                child: ClipOval(
+                                  child: ColorFiltered(
+                                    colorFilter: ColorFilter.mode(
+                                        Colors.grey, BlendMode.saturation),
+                                    child: Image.asset('assets/icon.png'),
+                                  ),
                                 ),
                               ),
-                            ),
-                            // Dar um espaço entre os Widget's.
-                            SizedBox(height: size.height * 0.01),
-                            // Texto
-                            Text(
-                              'ID Music está vazio.',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: size.height * 0.03),
-                            )
-                          ],
-                        ),
-                      )
-                    // Lista das músicas.
-                    : Column(
-                        children: [
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              // Seleção de Música.
-                              SelectMusic(
-                                group: widget.group,
-                              ),
+                              // Dar um espaço entre os Widget's.
+                              SizedBox(height: size.height * 0.01),
+                              // Texto
+                              Text(
+                                'ID Music está vazio.',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: size.height * 0.03),
+                              )
                             ],
                           ),
-                        ],
-                      ),
+                        )
+                      // Lista das músicas.
+                      : Column(
+                          children: [
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                // Seleção de Música.
+                                SelectMusic(
+                                  group: widget.group,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+            ),
           ),
         ),
       ),

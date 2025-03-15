@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:projeto_spotify/Utils/load_screen.dart';
 
-import '../Utils/constants.dart';
+import '../Utils/controle_arquivo.dart';
+import '../Utils/efficiency_utils.dart';
 import '../Utils/groups.dart';
 
 // Classe para realizar o login ou cadastro.
@@ -24,9 +23,6 @@ class _TelaLoginState extends State<TelaLogin> {
   late TextEditingController controllerSenha;
   late TextEditingController controllerConfirmarSenha;
 
-  // Referência ao arquivo 'Informação' do Firebase.
-  late DatabaseReference dbRef;
-
   // String de possíveis erros.
   String? errorUserName;
   String? errorEmail;
@@ -34,8 +30,18 @@ class _TelaLoginState extends State<TelaLogin> {
   String? errorConfirmarSenha;
 
   // Booleano para checagem.
+  bool autoLogin = false;
   bool login = true;
   bool loginIsOkay = true;
+
+  ControleArquivo file = ControleArquivo();
+
+  Future<void> bottomError(texto, size, context) =>
+      ErrorMessage().bottomSheetError(
+        texto: texto,
+        size: size,
+        context: context,
+      );
 
   // Função para verificar caso exista algum erro nos TextFormFields e avisar ao usuário.
   Future<void> checkValidation({
@@ -59,7 +65,11 @@ class _TelaLoginState extends State<TelaLogin> {
           errorConfirmarSenha = error;
       }
       setState(() {});
-      await bottomError(texto: error, size: size);
+      await bottomError(
+        errorText != null ? error : errorConvert(error.toString()),
+        size,
+        context,
+      );
       loginIsOkay = false;
     } else {
       switch (errorText) {
@@ -121,6 +131,9 @@ class _TelaLoginState extends State<TelaLogin> {
       return TextButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: Constants.color[700],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
           ),
           onPressed: onPressed,
           child: Text(
@@ -139,29 +152,6 @@ class _TelaLoginState extends State<TelaLogin> {
     }
   }
 
-  // Função para mostrar um erro na parte de baixo da tela.
-  Future<void> bottomError({required String texto, required Size size}) {
-    return showModalBottomSheet(
-        backgroundColor: Colors.red[900],
-        barrierColor: Colors.transparent,
-        context: context,
-        builder: (context) {
-          return SizedBox(
-            height: size.height * 0.05,
-            width: size.width,
-            child: TextButton(
-                onPressed: () {},
-                child: Text(
-                  texto,
-                  style: TextStyle(
-                    fontSize: size.height * 0.02,
-                    color: Colors.white,
-                  ),
-                )),
-          );
-        });
-  }
-
   // Função para converter a mensagem de erro do firabase para o português.
   String errorConvert(String error) {
     switch (error) {
@@ -175,7 +165,9 @@ class _TelaLoginState extends State<TelaLogin> {
         return 'Erro ao criar conta.';
 
       case _:
-        return 'Error';
+        return login
+            ? 'Conta não existe.'
+            : 'Ocorreu um erro, Tente Novamente.';
     }
   }
 
@@ -193,13 +185,33 @@ class _TelaLoginState extends State<TelaLogin> {
   @override
   void initState() {
     super.initState();
+
     // Atribuindo os Editores de Texto.
     controllerUserName = TextEditingController();
     controllerEmail = TextEditingController();
     controllerSenha = TextEditingController();
     controllerConfirmarSenha = TextEditingController();
 
-    dbRef = FirebaseDatabase.instance.ref().child('Informações');
+    Future.delayed(Duration.zero, () async {
+      try {
+        if (mounted) {
+          // Tela de Carregamento.
+          LoadScreen().loadingScreen(context);
+        }
+
+        await file.getAutoLogin().then((value) {
+          controllerEmail.text = value.split('-/-')[0];
+          controllerSenha.text = value.split('-/-')[1];
+          setState(() => autoLogin = true);
+        });
+      } catch (error) {
+        autoLogin = false;
+      }
+
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    });
   }
 
   // Função do Flutter para quando a Página fechar.
@@ -227,8 +239,11 @@ class _TelaLoginState extends State<TelaLogin> {
                 SizedBox(height: size.height * 0.05),
                 // Coloca o ícone na tela com tamaho especificado e forma oval.
                 SizedBox(
-                    height: size.height * 0.30,
-                    child: ClipOval(child: Image.asset('assets/icon.png'))),
+                  height: size.height * 0.30,
+                  child: ClipOval(
+                    child: Image.asset('assets/icon.png'),
+                  ),
+                ),
                 // Dar um espaço entre os Widget's.
                 SizedBox(height: size.height * 0.05),
                 Column(
@@ -267,6 +282,58 @@ class _TelaLoginState extends State<TelaLogin> {
                       ),
                     // Dar um espaço entre os Widget's.
                     SizedBox(height: size.height * 0.03),
+                    // TextButton do Lembrar Conta?
+                    TextButton(
+                      style: ElevatedButton.styleFrom(
+                        splashFactory: NoSplash.splashFactory,
+                        backgroundColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: () {
+                        setState(() => autoLogin = !autoLogin);
+                      },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: Colors.white,
+                                width: size.width * 0.005,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(5), //or 15.0
+                              child: Container(
+                                height: size.height * 0.03,
+                                width: size.height * 0.03,
+                                color: Colors.black,
+                                child: Icon(
+                                  Icons.check,
+                                  color:
+                                      autoLogin ? Colors.green : Colors.black,
+                                  size: size.height * 0.03,
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Dar um espaço entre os Widget's.
+                          SizedBox(width: size.width * 0.015),
+                          Text(
+                            'Lembrar Conta?',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: size.width * 0.04,
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
+                    // Dar um espaço entre os Widget's.
+                    SizedBox(height: size.height * 0.03),
                     // TextButton do Login.
                     loginOrCadastro(
                         texto: 'Logar',
@@ -284,6 +351,17 @@ class _TelaLoginState extends State<TelaLogin> {
                               password: controllerSenha.text,
                             );
 
+                            if (autoLogin) {
+                              await file.novoAutoLogin(
+                                  '${controllerEmail.text}-/-${controllerSenha.text}');
+                            } else {
+                              try {
+                                await file.deleteAutoLogin();
+                              } catch (error) {
+                                // Comentário para caso o arquivo não exista o aplicativo não crashar.
+                              }
+                            }
+
                             if (context.mounted) {
                               // Remove a tela que está no topo, que atualmente é a de carregamento.
                               Navigator.of(context).pop();
@@ -296,10 +374,13 @@ class _TelaLoginState extends State<TelaLogin> {
                             if (context.mounted) {
                               // Remove a tela que está no topo, que atualmente é a de carregamento.
                               Navigator.of(context).pop();
-                            }
 
-                            // Explicação se encontra na Função.
-                            bottomError(texto: 'Conta não existe!', size: size);
+                              bottomError(
+                                errorConvert(error.toString()),
+                                size,
+                                context,
+                              );
+                            }
                           }
                         },
                         size: size,
@@ -333,31 +414,51 @@ class _TelaLoginState extends State<TelaLogin> {
                             errorText: 'errorSenha',
                             error: 'Senha está vazia.',
                             size: size,
-                          ).then((value) async {
-                            if (errorSenha == null) {
-                              // Validação da Senha.
-                              await checkValidation(
-                                validation: controllerSenha.text != '' &&
-                                    controllerSenha.text.length < 6,
-                                errorText: 'errorSenha',
-                                error: 'Senha deve ser maior que 6 caracteres.',
-                                size: size,
-                              ).then((value) async {
-                                if (errorSenha == null) {
-                                  // Validação do ConfirmarSenha.
-                                  await checkValidation(
-                                    validation: controllerSenha.text !=
-                                        controllerConfirmarSenha.text,
-                                    errorText: 'errorConfirmarSenha',
-                                    error: 'As Senhas são diferentes!',
-                                    size: size,
-                                  );
-                                }
-                              });
-                            }
-                            errorConfirmarSenha = null;
-                            setState(() {});
-                          });
+                          ).then(
+                            (value) async {
+                              if (errorSenha == null) {
+                                // Validação da Senha.
+                                await checkValidation(
+                                  validation: controllerSenha.text != '' &&
+                                      controllerSenha.text.length < 6,
+                                  errorText: 'errorSenha',
+                                  error:
+                                      'Senha deve ser maior que 6 caracteres.',
+                                  size: size,
+                                ).then(
+                                  (value) async {
+                                    if (errorSenha == null) {
+                                      // Validação da Senha.
+                                      await checkValidation(
+                                        validation: controllerSenha.text
+                                            .contains('-/-'),
+                                        errorText: 'errorSenha',
+                                        error: 'Uso de caractere proibido.',
+                                        size: size,
+                                      ).then(
+                                        (value) async {
+                                          if (errorSenha == null) {
+                                            // Validação do ConfirmarSenha.
+                                            await checkValidation(
+                                              validation: controllerSenha
+                                                      .text !=
+                                                  controllerConfirmarSenha.text,
+                                              errorText: 'errorConfirmarSenha',
+                                              error:
+                                                  'As Senhas são diferentes!',
+                                              size: size,
+                                            );
+                                          }
+                                        },
+                                      );
+                                    }
+                                  },
+                                );
+                              }
+                              errorConfirmarSenha = null;
+                              setState(() {});
+                            },
+                          );
 
                           if (loginIsOkay) {
                             if (context.mounted) {
@@ -378,6 +479,17 @@ class _TelaLoginState extends State<TelaLogin> {
                                       email: controllerEmail.text,
                                       password: controllerSenha.text);
 
+                              if (autoLogin) {
+                                await file.novoAutoLogin(
+                                    '${controllerEmail.text}-/-${controllerSenha.text}');
+                              } else {
+                                try {
+                                  await file.deleteAutoLogin();
+                                } catch (error) {
+                                  // Comentário para caso o arquivo não exista o aplicativo não crashar.
+                                }
+                              }
+
                               // Salva o apelido e cria a Lista e Mixes vazio.
                               Map<String, String> mapInfo = {
                                 'Apelido': controllerUserName.text,
@@ -385,7 +497,7 @@ class _TelaLoginState extends State<TelaLogin> {
                               };
 
                               // Adiciona na database do Firebase.
-                              await dbRef
+                              await widget.group.dbRef.dbRefInfo
                                   .child(FirebaseAuth.instance.currentUser!.uid)
                                   .set(mapInfo);
 
@@ -402,10 +514,11 @@ class _TelaLoginState extends State<TelaLogin> {
                                 // Remove a tela que está no topo, que atualmente é a de carregamento.
                                 Navigator.of(context).pop();
 
-                                // Explicação se encontra na Função.
                                 bottomError(
-                                    texto: errorConvert(error.toString()),
-                                    size: size);
+                                  errorConvert(error.toString()),
+                                  size,
+                                  context,
+                                );
                               }
                             }
                           }
@@ -414,11 +527,14 @@ class _TelaLoginState extends State<TelaLogin> {
                         size: size,
                         loginOrCadastro: false),
                     // Dar um espaço entre os Widget's.
-                    SizedBox(height: size.height * 0.03),
+                    SizedBox(height: size.height * 0.01),
                     // TextButton para trocar entre Criar Conta / Fazer Login.
                     TextButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Constants.color[700],
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                         onPressed: () {
                           setState(() => login = !login);

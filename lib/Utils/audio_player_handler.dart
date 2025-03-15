@@ -20,8 +20,10 @@ class AudioPlayerHandler extends BaseAudioHandler {
   Map<int, AudioSource> listMusic = {};
   // Duração das músicas já carregadas.
   Map<int, Duration> durationMusic = {};
-  // Para saber quando ListView's Mode está carregando.
-  int? listViewIndex;
+  // Bloqueia o index da música caso ela dê algum problema.
+  List<int> indexBlocked = [];
+  // Para saber quando Multi Mode está carregando.
+  int? multiIndex;
   // Index principal das músicas.
   int? lastIndex;
   // Playlist principal.
@@ -37,6 +39,21 @@ class AudioPlayerHandler extends BaseAudioHandler {
   // bool para saber se precisa dar play ou não no SkipTo.
   bool isPlayingSkipTo = false;
 
+  // Verifica se a index está bloqueada.
+  bool isIndexNotBlocked(int index) {
+    if (indexBlocked.contains(index)) {
+      playbackState.add(playbackState.value.copyWith(
+        processingState: AudioProcessingState.idle,
+      ));
+
+      lastIndex = index;
+
+      return false;
+    } else {
+      return true;
+    }
+  }
+
   // Transforma a lista de nomes dos artistas em String.
   String textArtists(List<String> listArtists) {
     String artistName = '';
@@ -49,20 +66,100 @@ class AudioPlayerHandler extends BaseAudioHandler {
 
   // Função de pesquisa essencial da aplicação.
   Future<void> loadMusic(int index) async {
-    listViewIndex = index;
+    playbackState.add(playbackState.value.copyWith(
+      processingState: AudioProcessingState.loading,
+    ));
+
+    bool lastGambit = false;
+
+    multiIndex = index;
 
     int indexLoadMusic = 0;
 
     final yt = YoutubeExplode();
 
-    String nameArtist = artistName[index];
+    String nameArtist = artistName[index].contains(',')
+        ? artistName[index].split(',')[0]
+        : artistName[index];
 
-    final video = (await yt.search.search(
-        '${songList.elementAt(index)} $nameArtist',
-        filter: TypeFilters.video));
+    String musicName = songList.elementAt(index);
+
+    Future<void> removeMusicNameWords() async {
+      if (musicName.split(' ').length > 1) {
+        List<String> newMusicName = musicName.split(' ');
+        newMusicName.removeWhere((value) => value == '');
+        newMusicName.removeWhere((value) => value == '-');
+        newMusicName.removeLast();
+        musicName = '';
+        for (String value in newMusicName) {
+          musicName += value;
+
+          if (value != newMusicName.last) {
+            musicName += ' ';
+          }
+        }
+      }
+    }
+
+    Future<void> removeNameArtistWords() async {
+      if (nameArtist.split(' ').length > 1) {
+        List<String> newnameArtist = nameArtist.split(' ');
+        newnameArtist.removeWhere((value) => value == '');
+        newnameArtist.removeLast();
+        nameArtist = '';
+        for (String value in newnameArtist) {
+          nameArtist += value;
+
+          if (value != newnameArtist.last) {
+            nameArtist += ' ';
+          }
+        }
+      }
+    }
+
+    VideoSearchList video = await yt.search
+        .search('${musicName.toLowerCase()} ${nameArtist.toLowerCase()} Music');
 
     while (true) {
-      if (video.elementAt(indexLoadMusic).duration == null) {
+      if (indexLoadMusic > video.length - 1 &&
+          musicName.split(' ').length != 1) {
+        await removeMusicNameWords();
+        indexLoadMusic = 0;
+      }
+
+      if (indexLoadMusic > video.length - 1 &&
+          musicName.split(' ').length == 1 &&
+          lastGambit == false) {
+        indexLoadMusic = 0;
+        musicName = songList.elementAt(index);
+
+        await removeNameArtistWords();
+
+        video = await yt.search
+            .search('${musicName.toLowerCase()} ${nameArtist.toLowerCase()}');
+
+        lastGambit = true;
+      }
+
+      if (musicName.split(' ').length == 1 && lastGambit == true) {
+        playbackState.add(playbackState.value.copyWith(
+          processingState: AudioProcessingState.idle,
+        ));
+
+        indexBlocked.add(index);
+        lastIndex = index;
+
+        throw Error;
+      }
+
+      if (video.elementAtOrNull(indexLoadMusic)?.duration == null ||
+          (video.elementAt(indexLoadMusic).duration ?? Duration(minutes: 15)) >
+              Duration(minutes: 10) ||
+          !video
+              .elementAt(indexLoadMusic)
+              .title
+              .toLowerCase()
+              .contains(musicName.toLowerCase())) {
         indexLoadMusic += 1;
         continue;
       }
@@ -86,10 +183,6 @@ class AudioPlayerHandler extends BaseAudioHandler {
       durationMusic.addAll({index: video.elementAt(indexLoadMusic).duration!});
       break;
     }
-
-    playbackState.add(playbackState.value.copyWith(
-      processingState: AudioProcessingState.loading,
-    ));
 
     playlist = ConcatenatingAudioSource(children: listMusic.values.toList());
     _player.setAudioSource(
@@ -125,12 +218,14 @@ class AudioPlayerHandler extends BaseAudioHandler {
   Duration get position => _player.position;
   Duration get bufferedPosition => _player.bufferedPosition;
 
-  String get stateLoading => playbackState.value.processingState.name;
+  bool get stateLoading =>
+      playbackState.value.processingState.name == 'loading';
 
   // Modo repetir.
   Future<void> trueRepeatMode([bool ready = true]) async {
     if (ready) {
       repeat != 2 ? repeat += 1 : repeat = 0;
+      playbackState.add(playbackState.value.copyWith());
     } else {
       switch (repeat) {
         case 0:
@@ -139,7 +234,12 @@ class AudioPlayerHandler extends BaseAudioHandler {
             completed = true;
           }
         case 1:
-          await skipToNext();
+          if (songList.contains(
+              songList.elementAtOrNull((lastIndex ?? -2) + 1) ?? '')) {
+            await skipToNext();
+          } else {
+            await setAudioSolo(playlist, 0);
+          }
         case 2:
           await _player.seek(Duration.zero);
           playbackState.add(playbackState.value.copyWith(
@@ -153,7 +253,9 @@ class AudioPlayerHandler extends BaseAudioHandler {
   Future<void> trueShuffleMode([bool ready = true]) async {
     if (ready) {
       shuffle = !shuffle;
+      playbackState.add(playbackState.value.copyWith());
     } else {
+      bool isPlayingShuffle = playing;
       delayShuffle = true;
 
       int number = lastIndex!;
@@ -162,78 +264,85 @@ class AudioPlayerHandler extends BaseAudioHandler {
         number = Random().nextInt(songList.length);
       }
 
-      await pause();
-
-      playbackState.add(playbackState.value.copyWith(
-        processingState: AudioProcessingState.loading,
-      ));
+      if (isPlayingShuffle) {
+        await pause();
+      }
 
       if (!listMusic.containsKey(number)) {
         await loadMusic(number);
       } else {
-        lastIndex = number;
-        listViewIndex = number;
-
-        await _player.setAudioSource(
+        await setAudioSolo(
           playlist,
-          initialIndex: listMusic.keys.toList().indexOf(number),
-          initialPosition: Duration.zero,
+          listMusic.keys.toList().indexOf(number),
         );
-
-        mediaItem.value = mediaItemList[lastIndex];
       }
 
-      playbackState.add(playbackState.value
-          .copyWith(processingState: AudioProcessingState.ready));
-      delayShuffle = false;
+      if (isPlayingShuffle) {
+        await play();
+      }
 
-      await play();
+      await seek(Duration.zero);
+
+      delayShuffle = false;
     }
   }
 
   // StreamBuilder com ProgressBar principal.
   StreamBuilder customizeStreamBuilder() {
-    return StreamBuilder(
-      stream: positionStream,
-      builder: (context, data) {
-        if (currentIndex != null &&
-            lastIndex != null &&
-            position.inSeconds == (durationMusic[lastIndex]!.inSeconds - 1) &&
-            position != Duration.zero &&
-            durationMusic[lastIndex] != Duration.zero &&
-            !delayShuffle) {
-          if (shuffle == true) {
-            trueShuffleMode(false);
-          } else {
-            trueRepeatMode(false);
+    if (indexBlocked.contains(multiIndex) || stateLoading) {
+      return StreamBuilder(
+          stream: playbackState.stream,
+          builder: (context, data) {
+            return ProgressBar(
+              progress: Duration.zero,
+              total: Duration.zero,
+              baseBarColor: Colors.white,
+              bufferedBarColor: Colors.purple[200],
+              timeLabelTextStyle: TextStyle(color: Colors.white),
+              thumbCanPaintOutsideBar: false,
+            );
+          });
+    } else {
+      return StreamBuilder<Duration>(
+        stream: positionStream,
+        builder: (context, data) {
+          if (currentIndex != null &&
+              lastIndex != null &&
+              position.inSeconds == (durationMusic[lastIndex]!.inSeconds - 1) &&
+              position != Duration.zero &&
+              durationMusic[lastIndex] != Duration.zero &&
+              !delayShuffle) {
+            if (shuffle == true) {
+              trueShuffleMode(false);
+            } else {
+              trueRepeatMode(false);
+            }
           }
-        }
 
-        return ProgressBar(
-          progress: position > (durationMusic[lastIndex] ?? Duration.zero)
-              ? Duration.zero
-              : position,
-          buffered: bufferedPosition,
-          total: (durationMusic[lastIndex] ?? Duration(seconds: 1)) -
-              Duration(seconds: 1),
-          baseBarColor: Colors.white,
-          bufferedBarColor: Colors.purple[200],
-          timeLabelTextStyle: TextStyle(color: Colors.white),
-          onSeek: (value) async {
-            await seek(value);
-            playbackState.add(playbackState.value.copyWith(
-              updatePosition: position,
-            ));
-          },
-        );
-      },
-    );
+          return ProgressBar(
+            progress: position > (durationMusic[lastIndex] ?? Duration.zero)
+                ? Duration.zero
+                : position,
+            buffered: bufferedPosition,
+            total: (durationMusic[lastIndex] ?? Duration(seconds: 1)) -
+                Duration(seconds: 1),
+            baseBarColor: Colors.white,
+            bufferedBarColor: Colors.purple[200],
+            timeLabelTextStyle: TextStyle(color: Colors.white),
+            thumbCanPaintOutsideBar: false,
+            onSeek: (value) async {
+              await seek(value);
+            },
+          );
+        },
+      );
+    }
   }
 
   // Play da notificação que chama o choosePlayOrPause.
   @override
   Future<void> play() async {
-    choosePlayOrPause('Play');
+    await choosePlayOrPause('Play');
   }
 
   // Função de dar Play ou Pause principal.
@@ -254,7 +363,6 @@ class AudioPlayerHandler extends BaseAudioHandler {
 
     playbackState.add(playbackState.value.copyWith(
       playing: playing ? true : false,
-      processingState: AudioProcessingState.ready,
       updatePosition: position,
       bufferedPosition: bufferedPosition,
       controls: [
@@ -270,7 +378,7 @@ class AudioPlayerHandler extends BaseAudioHandler {
   // Pause da notificação que chama o choosePlayOrPause.
   @override
   Future<void> pause() async {
-    choosePlayOrPause('Pause');
+    await choosePlayOrPause('Pause');
   }
 
   // Stop da notificação.
@@ -288,13 +396,17 @@ class AudioPlayerHandler extends BaseAudioHandler {
   // Função dá notificação que chama o skipToCustomized.
   @override
   Future<void> skipToPrevious() async {
-    if (stateLoading != 'loading') {
-      skipToCustomized('Previous');
+    if (!stateLoading && isIndexNotBlocked(lastIndex! - 1)) {
+      await skipToCustomized('Previous');
     }
   }
 
   // Função de dar SkipToPrevious ou SkipToNext principal.
   Future<void> skipToCustomized(String skipTo) async {
+    playbackState.add(playbackState.value.copyWith(
+      processingState: AudioProcessingState.loading,
+    ));
+
     isPlayingSkipTo = playing;
     bool hasToPlay = false;
 
@@ -302,10 +414,6 @@ class AudioPlayerHandler extends BaseAudioHandler {
       await _player.pause();
       await seek(Duration.zero);
     }
-
-    playbackState.add(playbackState.value.copyWith(
-      processingState: AudioProcessingState.loading,
-    ));
 
     // Diferença nos códigos começa aqui.
 
@@ -315,7 +423,7 @@ class AudioPlayerHandler extends BaseAudioHandler {
         await loadMusic(lastIndex! - 1);
       } else {
         lastIndex = lastIndex! - 1;
-        listViewIndex = listViewIndex! - 1;
+        multiIndex = multiIndex! - 1;
         mediaItem.value = mediaItemList[lastIndex!];
         hasToPlay = true;
       }
@@ -327,7 +435,7 @@ class AudioPlayerHandler extends BaseAudioHandler {
         await loadMusic(lastIndex! + 1);
       } else {
         lastIndex = lastIndex! + 1;
-        listViewIndex = listViewIndex! + 1;
+        multiIndex = multiIndex! + 1;
         mediaItem.value = mediaItemList[lastIndex];
         hasToPlay = true;
       }
@@ -363,29 +471,26 @@ class AudioPlayerHandler extends BaseAudioHandler {
   // Função dá notificação que chama o skipToCustomized.
   @override
   Future<void> skipToNext() async {
-    if (stateLoading != 'loading') {
-      skipToCustomized('Next');
+    if (!stateLoading && isIndexNotBlocked(lastIndex! + 1)) {
+      await skipToCustomized('Next');
     }
   }
 
   // Função Seek Principal.
   @override
   Future<void> seek(Duration position) async {
-    playbackState.add(playbackState.value.copyWith(
-      processingState: AudioProcessingState.loading,
-    ));
+    if (!stateLoading) {
+      await _player.seek(position);
 
-    await _player.seek(position);
-
-    playbackState.add(playbackState.value.copyWith(
-      processingState: AudioProcessingState.ready,
-      updatePosition: position,
-    ));
+      playbackState.add(playbackState.value.copyWith(
+        updatePosition: position,
+      ));
+    }
   }
 
-  // Função para o ListView's Mode de iniciar uma música já carregada.
+  // Função para o Multi Mode de iniciar uma música já carregada.
   Future<void> setAudioSolo(AudioSource audio, int index) async {
-    listViewIndex = index;
+    multiIndex = index;
     lastIndex = index;
     mediaItem.value = mediaItemList[lastIndex];
 
@@ -400,19 +505,32 @@ class AudioPlayerHandler extends BaseAudioHandler {
     );
 
     playbackState.add(playbackState.value.copyWith(
+      playing: playing ? true : false,
       processingState: AudioProcessingState.ready,
+      updatePosition: position,
+      bufferedPosition: bufferedPosition,
+      controls: [
+        if (lastIndex != 0 || listMusic.containsKey((lastIndex ?? -1) - 1))
+          MediaControl.skipToPrevious,
+        if (songList
+            .contains(songList.elementAtOrNull((lastIndex ?? -2) + 1) ?? ''))
+          MediaControl.skipToNext,
+      ],
     ));
   }
 
-  // Função para dar Pesquisar e iniciar a música do SearchPlay.
-  void setAudioSource(AudioSource source, Map<String, dynamic> mapMedia) async {
-    lastIndex = 0;
-
-    listMusic.addAll({0: source});
-
+  // Função para Pesquisar e iniciar a música do SearchPlay.
+  Future<void> setAudioSource(VideoId id, Map<String, dynamic> mapMedia) async {
     playbackState.add(playbackState.value.copyWith(
       processingState: AudioProcessingState.loading,
     ));
+
+    lastIndex = 0;
+
+    // Pesquisa pelo ID do vídeo.
+    var manifest = await YoutubeExplode().videos.streamsClient.getManifest(id);
+
+    listMusic.addAll({0: AudioSource.uri(manifest.audioOnly.last.url)});
 
     mediaItemList.addAll(
       {
@@ -425,41 +543,48 @@ class AudioPlayerHandler extends BaseAudioHandler {
       },
     );
 
-    await _player.setAudioSource(source, initialPosition: Duration.zero);
+    await _player.setAudioSource(listMusic[0]!, initialPosition: Duration.zero);
 
     mediaItem.value = mediaItemList[0];
 
     // Broadcast that we've finished loading
     playbackState.add(playbackState.value.copyWith(
+      playing: true,
       processingState: AudioProcessingState.ready,
       systemActions: const {
         MediaAction.seek,
       },
     ));
+
+    _player.play();
   }
 
   // Dispose para fechar e limpar tudo que foi usado.
   Future<void> dispose() async {
-    artistImage = {};
     nameMusic = [];
-    listMusic = {};
     imageList = [];
-    durationMusic = {};
     artistName = [];
+    indexBlocked = [];
+    playlist = ConcatenatingAudioSource(children: []);
+    listMusic = {};
+    artistImage = {};
+    durationMusic = {};
     playlistName = {};
     songList = {};
     mediaItemList = {};
-    playlist = ConcatenatingAudioSource(children: []);
     lastIndex = null;
     completed = false;
-
-    repeat = 2;
-    trueRepeatMode();
+    shuffle = false;
+    delayShuffle = false;
+    repeat = 0;
 
     await stop();
 
-    await _player.dispose();
+    playbackState.add(playbackState.value.copyWith(
+      processingState: AudioProcessingState.idle,
+    ));
 
+    await _player.dispose();
 
     _player = AudioPlayer();
   }

@@ -4,6 +4,34 @@ import 'package:path_provider/path_provider.dart';
 
 // Classe criada para facilitar o Controle de Arquivos.
 class ControleArquivo {
+  // AutoLogin
+  Future<File> _fileAutoLogin() async {
+    final directory = await getApplicationDocumentsDirectory();
+    final path = directory.path;
+    return File('$path/AutoLogin.txt');
+  }
+
+  Future<String> getAutoLogin() async {
+    final file = await _fileAutoLogin();
+    return await file.readAsString();
+  }
+
+  // Função para sobrescrever o arquivo.
+  Future<File> novoAutoLogin(String uid) async {
+    final file = await _fileAutoLogin();
+
+    // Write the file
+    return file.writeAsString(uid, mode: FileMode.write);
+  }
+
+  Future<FileSystemEntity> deleteAutoLogin() async {
+    final file = await _fileAutoLogin();
+
+    return file.delete();
+  }
+
+  // IdMusic
+
   // Função para conseguir o diretório do arquivo.
   Future<File> _localFile() async {
     final directory = await getApplicationDocumentsDirectory();

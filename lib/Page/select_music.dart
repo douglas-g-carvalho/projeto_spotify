@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:projeto_spotify/Page/play_style.dart';
 
 import '../Utils/groups.dart';
-import '../Utils/image_loader.dart';
+import '../Utils/efficiency_utils.dart';
 
 // Classe criada para o usuário selecionar alguma música para escutar do Mixes.
 class SelectMusic extends StatefulWidget {
@@ -18,6 +18,11 @@ class SelectMusic extends StatefulWidget {
 }
 
 class _SelectMusicState extends State<SelectMusic> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     // Pega o tamanho da tela e armazena.
@@ -38,14 +43,13 @@ class _SelectMusicState extends State<SelectMusic> {
         Container(
           padding: const EdgeInsetsDirectional.symmetric(horizontal: 10),
           width: width,
-          height: height * 0.818,
+          height: height * 0.845,
           child: ListView.separated(
             itemCount: widget.group.get().length,
             separatorBuilder: (BuildContext context, int index) =>
                 SizedBox(height: height * 0.01),
             itemBuilder: (BuildContext context, int index) {
               return SingleChildScrollView(
-                physics: const NeverScrollableScrollPhysics(),
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
