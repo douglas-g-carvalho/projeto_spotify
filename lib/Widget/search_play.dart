@@ -99,165 +99,168 @@ class SearchPlay extends StatelessWidget {
       group.audioHandler.durationMusic.addAll({0: stringToDuration(duration)});
     }
 
-    return Scaffold(
-        appBar: AppBar(
-          centerTitle: true,
-          title: Text(
-            textAlign: TextAlign.center,
-            author,
-            style: const TextStyle(color: Colors.white),
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+          appBar: AppBar(
+            centerTitle: true,
+            title: Text(
+              textAlign: TextAlign.center,
+              author,
+              style: const TextStyle(color: Colors.white),
+            ),
+            leading: leading,
+            iconTheme: const IconThemeData(color: Colors.white),
           ),
-          leading: leading,
-          iconTheme: const IconThemeData(color: Colors.white),
-        ),
-        body: SingleChildScrollView(
-          physics: NeverScrollableScrollPhysics(),
-          child: Center(
-            child: Column(
-              children: [
-                // Adiciona um espaço caso não tenha data do vídeo.
-                if (uploadDate == '- Sem data')
-                  SizedBox(height: height * 0.001),
-                // Ícone music_video já que não tem capa.
-                Icon(
-                  Icons.music_video,
-                  size: width * 0.75,
-                  color: Colors.white,
-                ),
-                // Título.
-                SizedBox(
-                  width: width * 0.90,
-                  child: Text(
-                    title,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: width * 0.065,
+          body: SingleChildScrollView(
+            physics: NeverScrollableScrollPhysics(),
+            child: Center(
+              child: Column(
+                children: [
+                  // Adiciona um espaço caso não tenha data do vídeo.
+                  if (uploadDate == '- Sem data')
+                    SizedBox(height: height * 0.001),
+                  // Ícone music_video já que não tem capa.
+                  Icon(
+                    Icons.music_video,
+                    size: width * 0.75,
+                    color: Colors.white,
+                  ),
+                  // Título.
+                  SizedBox(
+                    width: width * 0.90,
+                    child: Text(
+                      title,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: width * 0.065,
+                      ),
                     ),
                   ),
-                ),
-                // Dar um espaço entre os Widget's.
-                SizedBox(height: height * 0.01),
-                // Contagem de views.
-                Text(
-                  textAlign: TextAlign.center,
-                  viewCount,
-                  style: TextStyle(
-                      color: Constants.color, fontSize: width * 0.06),
-                ),
-                // Dar um espaço entre os Widget's.
-                SizedBox(height: height * 0.01),
-                // Caso tenha data do vídeo.
-                if (uploadDate != '- Sem data')
-                  //  Data do vídeo e Data de quanto tempo o vídeo foi enviado.
+                  // Dar um espaço entre os Widget's.
+                  SizedBox(height: height * 0.01),
+                  // Contagem de views.
+                  Text(
+                    textAlign: TextAlign.center,
+                    viewCount,
+                    style: TextStyle(
+                        color: Constants.color, fontSize: width * 0.06),
+                  ),
+                  // Dar um espaço entre os Widget's.
+                  SizedBox(height: height * 0.01),
+                  // Caso tenha data do vídeo.
+                  if (uploadDate != '- Sem data')
+                    //  Data do vídeo e Data de quanto tempo o vídeo foi enviado.
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Data de quanto tempo o vídeo foi enviado.
+                        Text(
+                          textAlign: TextAlign.center,
+                          uploadDateRaw,
+                          style: TextStyle(
+                              color: Constants.color, fontSize: width * 0.06),
+                        ),
+                        //  Data do vídeo.
+                        Text(
+                          textAlign: TextAlign.center,
+                          uploadDate,
+                          style: TextStyle(
+                              color: Constants.color, fontSize: width * 0.06),
+                        ),
+                      ],
+                    ),
+                  // Dar um espaço entre os Widget's.
+                  SizedBox(height: height * 0.01),
+                  // Barra de progresso da música.
+                  SizedBox(
+                      width: size.width * 0.80,
+                      child: group.audioHandler.customizeStreamBuilder()),
+                  // Modo shuffle desativado (para deixar tudo centralizado), botão de Play e modo repetir.
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Data de quanto tempo o vídeo foi enviado.
-                      Text(
-                        textAlign: TextAlign.center,
-                        uploadDateRaw,
-                        style: TextStyle(
-                            color: Constants.color, fontSize: width * 0.06),
+                      // Shuffle (para deixar centralizado).
+                      TextButton(
+                        onPressed: () {},
+                        style: const ButtonStyle(
+                            splashFactory: NoSplash.splashFactory),
+                        child: Icon(
+                          Icons.shuffle,
+                          size: width * 0.12,
+                          color: Colors.grey,
+                        ),
                       ),
-                      //  Data do vídeo.
-                      Text(
-                        textAlign: TextAlign.center,
-                        uploadDate,
-                        style: TextStyle(
-                            color: Constants.color, fontSize: width * 0.06),
+                      // Botão de Play.
+                      TextButton(
+                        onPressed: () async {
+                          if (!group.audioHandler.stateLoading) {
+                            // Faz uma checagem para caso o áudio não tenha sido carregado.
+                            if (group.audioHandler.currentIndex == null) {
+                              audioIsOn();
+                            } else if (!group.audioHandler.playing) {
+                              // Começa a tocar a música.
+                              await group.audioHandler.play();
+                            } else {
+                              await group.audioHandler.pause();
+                            }
+                          }
+                        },
+                        child: Stack(
+                          children: [
+                            Icon(
+                              group.audioHandler.playing
+                                  ? Icons.pause_circle_outline
+                                  : Icons.play_circle_outline,
+                              size: width * 0.38,
+                              color: group.audioHandler.stateLoading
+                                  ? Colors.transparent
+                                  : Constants.color,
+                            ),
+                            if (group.audioHandler.stateLoading)
+                              Positioned(
+                                top: width * 0.04,
+                                right: width * 0.04,
+                                child: SizedBox(
+                                  width: width * 0.30,
+                                  height: height * 0.14,
+                                  child: const CircularProgressIndicator(
+                                    color: Constants.color,
+                                  ),
+                                ),
+                              )
+                          ],
+                        ),
+                      ),
+                      // Repetir.
+                      TextButton(
+                        onPressed: () async {
+                          // Troca o bool do repetir.
+                          if (group.audioHandler.repeat != 2) {
+                            await group.audioHandler.trueRepeatMode();
+                            await group.audioHandler.trueRepeatMode();
+                          } else {
+                            await group.audioHandler.trueRepeatMode();
+                          }
+                        },
+                        child: Icon(
+                          group.audioHandler.repeat == 2
+                              ? Icons.repeat_one
+                              : Icons.repeat,
+                          size: width * 0.12,
+                          color: group.audioHandler.repeat == 2
+                              ? Constants.color
+                              : Colors.white,
+                        ),
                       ),
                     ],
                   ),
-                // Dar um espaço entre os Widget's.
-                SizedBox(height: height * 0.01),
-                // Barra de progresso da música.
-                SizedBox(
-                    width: size.width * 0.80,
-                    child: group.audioHandler.customizeStreamBuilder()),
-                // Modo shuffle desativado (para deixar tudo centralizado), botão de Play e modo repetir.
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Shuffle (para deixar centralizado).
-                    TextButton(
-                      onPressed: () {},
-                      style: const ButtonStyle(
-                          splashFactory: NoSplash.splashFactory),
-                      child: Icon(
-                        Icons.shuffle,
-                        size: width * 0.12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    // Botão de Play.
-                    TextButton(
-                      onPressed: () async {
-                        if (!group.audioHandler.stateLoading) {
-                          // Faz uma checagem para caso o áudio não tenha sido carregado.
-                          if (group.audioHandler.currentIndex == null) {
-                            audioIsOn();
-                          } else if (!group.audioHandler.playing) {
-                            // Começa a tocar a música.
-                            await group.audioHandler.play();
-                          } else {
-                            await group.audioHandler.pause();
-                          }
-                        }
-                      },
-                      child: Stack(
-                        children: [
-                          Icon(
-                            group.audioHandler.playing
-                                ? Icons.pause_circle_outline
-                                : Icons.play_circle_outline,
-                            size: width * 0.38,
-                            color: group.audioHandler.stateLoading
-                                ? Colors.transparent
-                                : Constants.color,
-                          ),
-                          if (group.audioHandler.stateLoading)
-                            Positioned(
-                              top: width * 0.04,
-                              right: width * 0.04,
-                              child: SizedBox(
-                                width: width * 0.30,
-                                height: height * 0.14,
-                                child: const CircularProgressIndicator(
-                                  color: Constants.color,
-                                ),
-                              ),
-                            )
-                        ],
-                      ),
-                    ),
-                    // Repetir.
-                    TextButton(
-                      onPressed: () async {
-                        // Troca o bool do repetir.
-                        if (group.audioHandler.repeat != 2) {
-                          await group.audioHandler.trueRepeatMode();
-                          await group.audioHandler.trueRepeatMode();
-                        } else {
-                          await group.audioHandler.trueRepeatMode();
-                        }
-                      },
-                      child: Icon(
-                        group.audioHandler.repeat == 2
-                            ? Icons.repeat_one
-                            : Icons.repeat,
-                        size: width * 0.12,
-                        color: group.audioHandler.repeat == 2
-                            ? Constants.color
-                            : Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ));
+          )),
+    );
   }
 }
