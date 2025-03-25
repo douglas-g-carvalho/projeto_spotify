@@ -110,6 +110,22 @@ class SearchPlay extends StatelessWidget {
               style: const TextStyle(color: Colors.white),
             ),
             leading: leading,
+            actions: [
+              // Botão para bloquear a tela.
+              TextButton(
+                onPressed: () async {
+                  if (!group.audioHandler.stateLoading) {
+                    await BlockScreen().block(context);
+                  }
+                },
+                child: Icon(
+                  Icons.lock,
+                  color: (group.audioHandler.stateLoading)
+                      ? Colors.purple[1000]
+                      : Colors.purple,
+                ),
+              ),
+            ],
             iconTheme: const IconThemeData(color: Colors.white),
           ),
           body: SingleChildScrollView(

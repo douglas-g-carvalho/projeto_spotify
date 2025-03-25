@@ -20,6 +20,7 @@ final group = Groups();
 Future<void> main() async {
   // usado para remover erro no terminal.
   WidgetsFlutterBinding.ensureInitialized();
+
   // inicia o Firebase.
   await Firebase.initializeApp();
 

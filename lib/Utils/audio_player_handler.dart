@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import 'package:just_audio/just_audio.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 class AudioPlayerHandler extends BaseAudioHandler {
   // Set de informações importantes diretas do Spotify.
@@ -561,6 +562,8 @@ class AudioPlayerHandler extends BaseAudioHandler {
 
   // Dispose para fechar e limpar tudo que foi usado.
   Future<void> dispose() async {
+    WakelockPlus.disable();
+
     nameMusic = [];
     imageList = [];
     artistName = [];

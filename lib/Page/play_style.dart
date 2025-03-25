@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:projeto_spotify/Utils/groups.dart';
 import 'package:spotify/spotify.dart' as sptf;
 
@@ -133,6 +135,7 @@ class _PlayStyleState extends State<PlayStyle> {
   // Quando o play_music for iniciado.
   @override
   void initState() {
+    WakelockPlus.enable();
     // Explicação se encontra na função.
     getInfo().then((value) {
       // Atualiza a tela.
@@ -193,6 +196,20 @@ class _PlayStyleState extends State<PlayStyle> {
                   style: TextStyle(color: Colors.white, fontSize: width * 0.06),
                 ),
                 actions: [
+                  // Botão para bloquear a tela.
+                  TextButton(
+                    onPressed: () async {
+                      if (!widget.group.audioHandler.stateLoading) {
+                        await BlockScreen().block(context);
+                      }
+                    },
+                    child: Icon(
+                      Icons.lock,
+                      color: (widget.group.audioHandler.stateLoading)
+                          ? Colors.purple[1000]
+                          : Colors.purple,
+                    ),
+                  ),
                   // Botão para trocar o estilo visual (Single Mode, Multi Mode).
                   TextButton(
                     onPressed: () async {

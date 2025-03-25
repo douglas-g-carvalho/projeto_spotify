@@ -118,3 +118,64 @@ class ErrorMessage {
         });
   }
 }
+
+class BlockScreen {
+  Future<void> block(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
+    return showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (ctx) {
+        return PopScope(
+          canPop: false,
+          child: Center(
+            child: SingleChildScrollView(
+              child: AlertDialog(
+                backgroundColor: Colors.transparent,
+                actions: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Dismissible(
+                        key: ValueKey<int>(0),
+                        onDismissed: (direction) => Navigator.of(context).pop(),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.arrow_back,
+                              color: Colors.white,
+                              size: size.width * 0.10,
+                            ),
+                            SizedBox(width: size.width * 0.03),
+                            Container(
+                              width: size.width * 0.15,
+                              height: size.height * 0.075,
+                              decoration: BoxDecoration(
+                                  color: Colors.white, shape: BoxShape.circle),
+                              child: Icon(
+                                Icons.lock,
+                                color: Colors.black,
+                              ),
+                            ),
+                            SizedBox(width: size.width * 0.03),
+                            Icon(
+                              Icons.arrow_forward,
+                              color: Colors.white,
+                              size: size.width * 0.10,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  )
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

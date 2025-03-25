@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:projeto_spotify/Utils/groups.dart';
 
 import 'package:projeto_spotify/Widget/search_play.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 import '../Utils/efficiency_utils.dart';
@@ -347,6 +348,8 @@ class _SearchState extends State<Search> {
                                             // Vai para search_play.
                                             indexSearch = index;
                                             searchState = !searchState;
+                                            WakelockPlus.enable();
+
                                             setState(() {});
                                           },
                                           child: Row(
