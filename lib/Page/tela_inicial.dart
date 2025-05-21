@@ -294,12 +294,12 @@ class _TelaInicialState extends State<TelaInicial> {
                   : (mapIdMusic.isEmpty)
                       // Logo (em preto e branco) e Texto avisando que a lista está vazia.
                       ? Center(
-                          heightFactor: 2.1,
+                          heightFactor: 2,
                           child: Column(
                             children: [
                               // Coloca o ícone com as cores preto e branco na tela com tamaho especificado e forma oval.
                               SizedBox(
-                                height: size.height * 0.30,
+                                height: size.height * 0.35,
                                 child: ClipOval(
                                   child: ColorFiltered(
                                     colorFilter: ColorFilter.mode(
@@ -313,6 +313,7 @@ class _TelaInicialState extends State<TelaInicial> {
                               // Texto
                               Text(
                                 'ID Music está vazio.',
+                                textAlign: TextAlign.center,
                                 style: TextStyle(
                                     color: Colors.white,
                                     fontSize: size.height * 0.03),

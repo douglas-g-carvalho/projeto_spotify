@@ -23,7 +23,6 @@ Future<void> main() async {
 
   // inicia o Firebase.
   await Firebase.initializeApp();
-
   group.audioHandler = await AudioService.init(
     builder: () => AudioPlayerHandler(),
     config: const AudioServiceConfig(
@@ -56,7 +55,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       // Remove o Debug no canto da tela.
       debugShowCheckedModeBanner: false,
-      title: 'Musical Wizard',
+      title: 'Music Player',
       // configura o Tema default dos Widgets.
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.black,

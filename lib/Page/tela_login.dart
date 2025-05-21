@@ -239,7 +239,7 @@ class _TelaLoginState extends State<TelaLogin> {
                 SizedBox(height: size.height * 0.05),
                 // Coloca o ícone na tela com tamaho especificado e forma oval.
                 SizedBox(
-                  height: size.height * 0.30,
+                  height: size.height * 0.35,
                   child: ClipOval(
                     child: Image.asset('assets/icon.png'),
                   ),
